@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Tid på kortet</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="popup-page">
+    <main class="card-form-shell">
+      <header class="compact-header">
+        <span class="eyebrow">Tidsregistrering</span>
+        <h1 id="card-title">Indlæs kort...</h1>
+      </header>
+
+      <form id="time-form">
+        <label class="field">
+          <span>Estimat</span>
+          <span class="number-input"><input id="estimate" name="estimate" type="number" min="0.25" step="0.25" placeholder="4" required /><span>timer</span></span>
+        </label>
+
+        <div class="completion-panel">
+          <label class="check-row">
+            <input id="completed" name="completed" type="checkbox" />
+            <span><strong>Opgaven er færdig</strong><small>Registrér den tid, der faktisk blev brugt.</small></span>
+          </label>
+          <div id="actual-fields" class="actual-fields" hidden>
+            <label class="field">
+              <span>Faktisk tid</span>
+              <span class="number-input"><input id="actual" name="actual" type="number" min="0.25" step="0.25" placeholder="5.5" /><span>timer</span></span>
+            </label>
+            <label class="field">
+              <span>Afsluttet</span>
+              <input id="completed-at" name="completedAt" type="date" />
+            </label>
+          </div>
+        </div>
+
+        <p id="form-error" class="form-message error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button type="button" class="button button-quiet" id="cancel">Annuller</button>
+          <button type="submit" class="button button-primary" id="save">Gem tid</button>
+        </div>
+      </form>
+    </main>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <script type="module" src="/src/card.js"></script>
+  </body>
+</html>

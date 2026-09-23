@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Burndown</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="dashboard-page">
+    <main class="dashboard-shell">
+      <header class="dashboard-header">
+        <div>
+          <span class="eyebrow">Burndown</span>
+          <h1 id="board-title">Boardets sprint</h1>
+        </div>
+        <button id="settings-toggle" class="button button-quiet" type="button" aria-expanded="false">Sprintdatoer</button>
+      </header>
+
+      <section id="settings-panel" class="settings-panel" hidden>
+        <form id="settings-form">
+          <label class="field"><span>Startdato</span><input id="start-date" type="date" required /></label>
+          <label class="field"><span>Slutdato</span><input id="end-date" type="date" required /></label>
+          <button class="button button-primary" type="submit">Gem datoer</button>
+        </form>
+        <p class="helper-text">Alle kalenderdage vises. Kort uden estimat tæller ikke med.</p>
+      </section>
+
+      <section id="loading" class="loading-state"><span class="pulse-dot"></span><p>Samler timer fra boardet...</p></section>
+      <section id="dashboard-content" hidden>
+        <div class="metric-strip" aria-label="Sprintstatus">
+          <article><span>Tilbage</span><strong id="remaining-hours">0 t</strong></article>
+          <article><span>Færdige kort</span><strong id="completed-count">0 / 0</strong></article>
+          <article><span>Estimat mod faktisk</span><strong id="variance">0 t</strong></article>
+        </div>
+
+        <section class="chart-card">
+          <div class="chart-heading">
+            <div><h2>Timer tilbage</h2><p id="date-range"></p></div>
+            <div class="legend" aria-label="Signaturforklaring"><span><i class="legend-actual"></i>Faktisk</span><span><i class="legend-ideal"></i>Ideel</span></div>
+          </div>
+          <div id="chart" class="chart" role="img" aria-label="Burndown-graf"></div>
+        </section>
+
+        <section class="task-section">
+          <div class="section-heading"><h2>Opgaver</h2><span id="tracked-label"></span></div>
+          <div id="task-list" class="task-list"></div>
+        </section>
+      </section>
+      <section id="empty-state" class="empty-state" hidden>
+        <div class="empty-graph" aria-hidden="true"><span></span><span></span><span></span><i></i></div>
+        <h2>Grafen mangler timer</h2>
+        <p>Åbn et kort, vælg "Tid &amp; afslutning", og tilføj et estimat.</p>
+      </section>
+      <p id="dashboard-error" class="form-message error" role="alert" hidden></p>
+    </main>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <script type="module" src="/src/dashboard.js"></script>
+  </body>
+</html>
