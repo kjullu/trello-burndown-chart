@@ -35,6 +35,7 @@ function render(preferences) {
   document.querySelector('#sprint-days').value = preferences.defaultSprintDays;
   document.querySelector('#copy-estimate').checked = preferences.copyEstimateToActual;
   document.querySelector('#show-front-badges').checked = preferences.showCardFrontBadges;
+  document.querySelector('#remind-missing-estimate').checked = preferences.remindMissingEstimate;
   document.querySelector('#warn-over-estimate').checked = preferences.warnOverEstimate;
   t.sizeTo('body');
 }
@@ -48,6 +49,7 @@ function readForm() {
     defaultSprintDays: Number(document.querySelector('#sprint-days').value),
     copyEstimateToActual: document.querySelector('#copy-estimate').checked,
     showCardFrontBadges: document.querySelector('#show-front-badges').checked,
+    remindMissingEstimate: document.querySelector('#remind-missing-estimate').checked,
     warnOverEstimate: document.querySelector('#warn-over-estimate').checked,
   });
 }

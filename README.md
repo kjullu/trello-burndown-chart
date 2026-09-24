@@ -75,7 +75,7 @@ Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende e
 
 Åbn boardets **Power-Ups**-menu, find Sprintline, og vælg **Settings**. Indstillingerne gælder kun for det aktuelle board.
 
-Her kan du vælge farver for aktive, færdige og overskredne opgaver, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, skjule badges på kortforsiden og vælge standardlængden på nye sprints.
+Her kan du vælge farver for aktive, færdige og overskredne opgaver, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, vise en rød påmindelse på kort uden estimat, skjule badges på kortforsiden og vælge standardlængden på nye sprints.
 
 ## Host projektet selv
 

@@ -44,11 +44,12 @@ describe('needsActualTime', () => {
 
 describe('board preferences', () => {
   it('normalizes unsafe values and preserves valid choices', () => {
-    expect(normalizePreferences({ activeColor: 'purple', warningColor: 'invalid', defaultSprintDays: 21, copyEstimateToActual: false })).toMatchObject({
+    expect(normalizePreferences({ activeColor: 'purple', warningColor: 'invalid', defaultSprintDays: 21, copyEstimateToActual: false, remindMissingEstimate: true })).toMatchObject({
       activeColor: 'purple',
       warningColor: 'red',
       defaultSprintDays: 21,
       copyEstimateToActual: false,
+      remindMissingEstimate: true,
     });
   });
 

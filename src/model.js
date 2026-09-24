@@ -9,6 +9,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
   defaultEstimate: null,
   copyEstimateToActual: true,
   showCardFrontBadges: true,
+  remindMissingEstimate: false,
   warnOverEstimate: true,
   defaultSprintDays: 14,
 });
@@ -24,6 +25,7 @@ export function normalizePreferences(value = {}) {
     defaultEstimate: positiveNumber(value.defaultEstimate),
     copyEstimateToActual: value.copyEstimateToActual !== false,
     showCardFrontBadges: value.showCardFrontBadges !== false,
+    remindMissingEstimate: value.remindMissingEstimate === true,
     warnOverEstimate: value.warnOverEstimate !== false,
     defaultSprintDays: Number.isInteger(sprintDays) && sprintDays >= 1 && sprintDays <= 90 ? sprintDays : DEFAULT_PREFERENCES.defaultSprintDays,
   };

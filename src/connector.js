@@ -18,6 +18,9 @@ window.TrelloPowerUp.initialize({
     const data = normalizeTimeData(stored);
     const preferences = normalizePreferences(storedPreferences);
     if (!preferences.showCardFrontBadges) return [];
+    if (!data.estimate && preferences.remindMissingEstimate) {
+      return [{ icon, text: 'Mangler estimat', color: preferences.warningColor, monochrome: false }];
+    }
     if (needsActualTime({ ...card, time: data })) {
       return [{ icon, text: 'Mangler faktisk tid', color: preferences.warningColor, monochrome: false }];
     }
