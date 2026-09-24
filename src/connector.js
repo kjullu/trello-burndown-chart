@@ -7,7 +7,7 @@ window.TrelloPowerUp.initialize({
     icon,
     text: 'Tid & afslutning',
     condition: 'edit',
-    callback: (t) => t.popup({ title: 'Tid på opgaven', url: './card.html', height: 386 }),
+    callback: (t) => t.popup({ title: 'Tid på opgaven', url: './card.html', height: 470 }),
   }],
   'card-badges': async (t) => {
     const data = normalizeTimeData(await t.get('card', 'shared', CARD_DATA_KEY, {}));
@@ -25,7 +25,7 @@ window.TrelloPowerUp.initialize({
       title: 'Tid',
       text: data.completedAt ? `${formatHours(data.actual)} faktisk · ${formatHours(data.estimate)} estimeret` : `${formatHours(data.estimate)} estimeret`,
       color: data.completedAt ? 'green' : 'blue',
-      callback: (context) => context.popup({ title: 'Tid på opgaven', url: './card.html', height: 386 }),
+      callback: (context) => context.popup({ title: 'Tid på opgaven', url: './card.html', height: 470 }),
     }];
   },
   'board-buttons': () => [{
