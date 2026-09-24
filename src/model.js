@@ -1,5 +1,33 @@
 export const CARD_DATA_KEY = 'sprintlineTime';
 export const BOARD_SETTINGS_KEY = 'sprintlineSettings';
+export const BOARD_PREFERENCES_KEY = 'sprintlinePreferences';
+
+export const DEFAULT_PREFERENCES = Object.freeze({
+  activeColor: 'blue',
+  completedColor: 'green',
+  warningColor: 'red',
+  defaultEstimate: null,
+  copyEstimateToActual: true,
+  showCardFrontBadges: true,
+  warnOverEstimate: true,
+  defaultSprintDays: 14,
+});
+
+const BADGE_COLORS = new Set(['blue', 'green', 'orange', 'red', 'yellow', 'purple', 'pink', 'sky', 'lime', 'light-gray']);
+
+export function normalizePreferences(value = {}) {
+  const sprintDays = Number(value.defaultSprintDays);
+  return {
+    activeColor: BADGE_COLORS.has(value.activeColor) ? value.activeColor : DEFAULT_PREFERENCES.activeColor,
+    completedColor: BADGE_COLORS.has(value.completedColor) ? value.completedColor : DEFAULT_PREFERENCES.completedColor,
+    warningColor: BADGE_COLORS.has(value.warningColor) ? value.warningColor : DEFAULT_PREFERENCES.warningColor,
+    defaultEstimate: positiveNumber(value.defaultEstimate),
+    copyEstimateToActual: value.copyEstimateToActual !== false,
+    showCardFrontBadges: value.showCardFrontBadges !== false,
+    warnOverEstimate: value.warnOverEstimate !== false,
+    defaultSprintDays: Number.isInteger(sprintDays) && sprintDays >= 1 && sprintDays <= 90 ? sprintDays : DEFAULT_PREFERENCES.defaultSprintDays,
+  };
+}
 
 export function normalizeTimeData(value = {}) {
   const estimate = positiveNumber(value.estimate);
@@ -40,11 +68,10 @@ export function dateRange(start, end) {
   return days;
 }
 
-export function defaultSprintDates(today = new Date()) {
+export function defaultSprintDates(today = new Date(), durationDays = DEFAULT_PREFERENCES.defaultSprintDays) {
   const start = new Date(today);
   const end = new Date(today);
-  start.setDate(start.getDate() - 3);
-  end.setDate(end.getDate() + 10);
+  end.setDate(end.getDate() + Math.max(1, durationDays) - 1);
   return { startDate: localDateKey(start), endDate: localDateKey(end) };
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBurndown, dateRange, needsActualTime, normalizeTimeData } from '../src/model.js';
+import { buildBurndown, dateRange, defaultSprintDates, needsActualTime, normalizePreferences, normalizeTimeData } from '../src/model.js';
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
@@ -39,5 +39,20 @@ describe('needsActualTime', () => {
     expect(needsActualTime({ dueComplete: true, time: { completedAt: null } })).toBe(true);
     expect(needsActualTime({ dueComplete: true, time: { completedAt: '2026-09-24' } })).toBe(false);
     expect(needsActualTime({ dueComplete: false, time: { completedAt: null } })).toBe(false);
+  });
+});
+
+describe('board preferences', () => {
+  it('normalizes unsafe values and preserves valid choices', () => {
+    expect(normalizePreferences({ activeColor: 'purple', warningColor: 'invalid', defaultSprintDays: 21, copyEstimateToActual: false })).toMatchObject({
+      activeColor: 'purple',
+      warningColor: 'red',
+      defaultSprintDays: 21,
+      copyEstimateToActual: false,
+    });
+  });
+
+  it('uses the configured sprint duration for new sprints', () => {
+    expect(defaultSprintDates(new Date('2026-09-24T12:00:00'), 7)).toEqual({ startDate: '2026-09-24', endDate: '2026-09-30' });
   });
 });

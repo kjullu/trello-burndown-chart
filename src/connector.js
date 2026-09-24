@@ -1,4 +1,4 @@
-import { CARD_DATA_KEY, formatHours, needsActualTime, normalizeTimeData } from './model.js';
+import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, formatHours, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
 
 const icon = new URL('./icon.svg', window.location.href).href;
 
@@ -10,32 +10,39 @@ window.TrelloPowerUp.initialize({
     callback: (t) => t.popup({ title: 'Tid på opgaven', url: './card.html?v=2', height: 470 }),
   }],
   'card-badges': async (t) => {
-    const [stored, card] = await Promise.all([
+    const [stored, card, storedPreferences] = await Promise.all([
       t.get('card', 'shared', CARD_DATA_KEY, {}),
       t.card('dueComplete'),
+      t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
     ]);
     const data = normalizeTimeData(stored);
+    const preferences = normalizePreferences(storedPreferences);
+    if (!preferences.showCardFrontBadges) return [];
     if (needsActualTime({ ...card, time: data })) {
-      return [{ icon, text: 'Mangler faktisk tid', color: 'red' }];
+      return [{ icon, text: 'Mangler faktisk tid', color: preferences.warningColor }];
     }
     if (!data.estimate) return [];
     return [{
       icon,
       text: data.completedAt ? `${formatHours(data.actual)} / ${formatHours(data.estimate)}` : formatHours(data.estimate),
-      color: data.completedAt ? 'green' : 'blue',
+      color: data.completedAt
+        ? preferences.warnOverEstimate && data.actual > data.estimate ? preferences.warningColor : preferences.completedColor
+        : preferences.activeColor,
     }];
   },
   'card-detail-badges': async (t) => {
-    const [stored, card] = await Promise.all([
+    const [stored, card, storedPreferences] = await Promise.all([
       t.get('card', 'shared', CARD_DATA_KEY, {}),
       t.card('dueComplete'),
+      t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
     ]);
     const data = normalizeTimeData(stored);
+    const preferences = normalizePreferences(storedPreferences);
     if (needsActualTime({ ...card, time: data })) {
       return [{
         title: 'Tid',
         text: data.estimate ? `Mangler faktisk tid · ${formatHours(data.estimate)} estimeret` : 'Mangler tidsregistrering',
-        color: 'red',
+        color: preferences.warningColor,
         callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=2', height: 470 }),
       }];
     }
@@ -50,7 +57,9 @@ window.TrelloPowerUp.initialize({
     return [{
       title: 'Tid',
       text: data.completedAt ? `${formatHours(data.actual)} faktisk · ${formatHours(data.estimate)} estimeret` : `${formatHours(data.estimate)} estimeret`,
-      color: data.completedAt ? 'green' : 'blue',
+      color: data.completedAt
+        ? preferences.warnOverEstimate && data.actual > data.estimate ? preferences.warningColor : preferences.completedColor
+        : preferences.activeColor,
       callback: (context) => context.popup({ title: 'Tid på opgaven', url: './card.html?v=2', height: 470 }),
     }];
   },
@@ -59,4 +68,9 @@ window.TrelloPowerUp.initialize({
     text: 'Burndown',
     callback: (t) => t.modal({ url: './dashboard.html', title: 'Sprintline', fullscreen: true, accentColor: '#0C66E4' }),
   }],
+  'show-settings': (t) => t.popup({
+    title: 'Sprintline-indstillinger',
+    url: './settings.html?v=1',
+    height: 650,
+  }),
 });

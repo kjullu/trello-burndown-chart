@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Sprintline-indstillinger</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="popup-page">
+    <main class="settings-shell">
+      <form id="preferences-form">
+        <section class="settings-group">
+          <div class="settings-group-heading">
+            <span class="eyebrow">Kort</span>
+            <h1>Sådan vises tid</h1>
+          </div>
+
+          <label class="field">
+            <span>Aktive estimater</span>
+            <select id="active-color"></select>
+          </label>
+          <label class="field">
+            <span>Færdige opgaver</span>
+            <select id="completed-color"></select>
+          </label>
+          <label class="field">
+            <span>Advarsler og overskredet estimat</span>
+            <select id="warning-color"></select>
+          </label>
+
+          <label class="switch-row">
+            <span><strong>Badge på kortforsiden</strong><small>Vis timer uden at åbne kortet.</small></span>
+            <input id="show-front-badges" type="checkbox" />
+          </label>
+          <label class="switch-row">
+            <span><strong>Advar ved overskridelse</strong><small>Brug advarselsfarven, når faktisk tid er højere end estimatet.</small></span>
+            <input id="warn-over-estimate" type="checkbox" />
+          </label>
+        </section>
+
+        <section class="settings-group">
+          <div class="settings-group-heading">
+            <span class="eyebrow">Standarder</span>
+            <h2>Nye registreringer</h2>
+          </div>
+          <label class="field">
+            <span>Standardestimat</span>
+            <span class="number-input"><input id="default-estimate" type="number" min="0.25" step="0.25" placeholder="Intet" /><span>timer</span></span>
+          </label>
+          <label class="field">
+            <span>Standard sprintlængde</span>
+            <span class="number-input"><input id="sprint-days" type="number" min="1" max="90" step="1" required /><span>dage</span></span>
+          </label>
+          <label class="switch-row">
+            <span><strong>Start faktisk tid med estimatet</strong><small>Kan altid overskrives, før tiden gemmes.</small></span>
+            <input id="copy-estimate" type="checkbox" />
+          </label>
+        </section>
+
+        <p id="settings-error" class="form-message error" role="alert" hidden></p>
+        <div class="form-actions settings-actions">
+          <button type="button" class="button button-quiet" id="reset">Nulstil</button>
+          <button type="submit" class="button button-primary" id="save-settings">Gem indstillinger</button>
+        </div>
+      </form>
+    </main>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <script type="module" src="/src/settings.js"></script>
+  </body>
+</html>

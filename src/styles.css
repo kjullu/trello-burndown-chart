@@ -40,7 +40,9 @@ h1, h2 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.03em; }
 .field { display: grid; gap: 7px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .field > span:first-child { letter-spacing: 0.02em; }
 input[type='number'], input[type='date'] { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; color: var(--ink); background: var(--surface); outline: none; }
+select { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; color: var(--ink); background: var(--surface); outline: none; }
 input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 228, 0.14); }
+select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 228, 0.14); }
 .number-input { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
 .number-input:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 228, 0.14); }
 .number-input input { flex: 1 1 auto; width: 0; min-width: 0; border: 0; box-shadow: none; }
@@ -62,6 +64,16 @@ input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 228
 .button:disabled { opacity: 0.6; cursor: wait; }
 .form-message { margin: 12px 0 0; border-radius: 5px; padding: 9px 11px; font-size: 12px; }
 .error { color: var(--red); background: #ffedeb; }
+.settings-shell { padding: 18px; }
+.settings-group { display: grid; gap: 13px; }
+.settings-group + .settings-group { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 20px; }
+.settings-group-heading h1, .settings-group-heading h2 { margin: 0; font-size: 18px; }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; }
+.switch-row > span { display: grid; gap: 3px; }
+.switch-row strong { font-size: 12px; }
+.switch-row small { color: var(--muted); font-size: 10px; line-height: 1.4; }
+.switch-row input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: var(--blue); }
+.settings-actions { position: sticky; bottom: 0; margin-inline: -18px; padding: 14px 18px 0; background: var(--surface); }
 
 .dashboard-page { min-height: 100vh; background-color: var(--paper); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; }
 .dashboard-shell { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 42px 0 60px; }

@@ -9,6 +9,7 @@ export default defineConfig({
         connector: resolve(import.meta.dirname, 'index.html'),
         card: resolve(import.meta.dirname, 'card.html'),
         dashboard: resolve(import.meta.dirname, 'dashboard.html'),
+        settings: resolve(import.meta.dirname, 'settings.html'),
       },
     },
   },

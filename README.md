@@ -32,6 +32,7 @@ Power-Up'en har ingen ekstern database. Tidsdata gemmes på dit eget Trello-boar
    - `card-buttons`
    - `card-badges`
    - `card-detail-badges`
+   - `show-settings`
 7. Gå tilbage til dit Trello-board, åbn **Power-Ups**, og tilføj den nye Power-Up.
 
 OAuth 2.0 skal ikke konfigureres. Sprintline bruger Power-Up-klientens datalager og kalder ikke Trellos REST API med en brugertoken.
@@ -66,6 +67,12 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 3. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid samt alle kort med estimater.
 
 Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats. Når en opgave afsluttes, trækkes dens estimat fra den resterende indsats. Den faktiske registrerede tid bruges i målingen **Estimat mod faktisk**.
+
+### Tilpas indstillingerne
+
+Åbn boardets **Power-Ups**-menu, find Sprintline, og vælg **Settings**. Indstillingerne gælder kun for det aktuelle board.
+
+Her kan du vælge farver for aktive, færdige og overskredne opgaver, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, skjule badges på kortforsiden og vælge standardlængden på nye sprints.
 
 ## Host projektet selv
 

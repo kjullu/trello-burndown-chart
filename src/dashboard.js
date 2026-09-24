@@ -1,4 +1,4 @@
-import { BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, defaultSprintDates, formatHours, needsActualTime, normalizeTimeData } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, defaultSprintDates, formatHours, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
 import { renderChart } from './chart.js';
 
 const demoMode = new URLSearchParams(window.location.search).has('demo');
@@ -84,17 +84,19 @@ function render(settings) {
 }
 
 async function load() {
-  const [board, trelloCards, storedSettings] = await Promise.all([
+  const [board, trelloCards, storedSettings, storedPreferences] = await Promise.all([
     t.board('name'),
     t.cards('id', 'name', 'url', 'dueComplete'),
     t.get('board', 'shared', BOARD_SETTINGS_KEY, null),
+    t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
   ]);
   document.querySelector('#board-title').textContent = board.name;
   cards = await Promise.all(trelloCards.map(async (card) => ({
     ...card,
     time: normalizeTimeData(await t.get(card.id, 'shared', CARD_DATA_KEY, {})),
   })));
-  const defaults = defaultSprintDates();
+  const preferences = normalizePreferences(storedPreferences);
+  const defaults = defaultSprintDates(new Date(), preferences.defaultSprintDays);
   const settings = storedSettings?.startDate && storedSettings?.endDate ? storedSettings : defaults;
   render(settings);
 }
