@@ -1,6 +1,6 @@
 import { CARD_DATA_KEY, formatHours, normalizeTimeData } from './model.js';
 
-const icon = new URL('/icon.svg', window.location.origin).href;
+const icon = new URL('./icon.svg', window.location.href).href;
 
 window.TrelloPowerUp.initialize({
   'card-buttons': () => [{
