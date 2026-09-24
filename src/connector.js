@@ -7,7 +7,7 @@ window.TrelloPowerUp.initialize({
     icon,
     text: 'Tid & afslutning',
     condition: 'edit',
-    callback: (t) => t.popup({ title: 'Tid på opgaven', url: './card.html', height: 470 }),
+    callback: (t) => t.popup({ title: 'Tid på opgaven', url: './card.html?v=2', height: 470 }),
   }],
   'card-badges': async (t) => {
     const [stored, card] = await Promise.all([
@@ -36,7 +36,7 @@ window.TrelloPowerUp.initialize({
         title: 'Tid',
         text: data.estimate ? `Mangler faktisk tid · ${formatHours(data.estimate)} estimeret` : 'Mangler tidsregistrering',
         color: 'red',
-        callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html', height: 470 }),
+        callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=2', height: 470 }),
       }];
     }
     if (!data.estimate) return [];
@@ -44,7 +44,7 @@ window.TrelloPowerUp.initialize({
       title: 'Tid',
       text: data.completedAt ? `${formatHours(data.actual)} faktisk · ${formatHours(data.estimate)} estimeret` : `${formatHours(data.estimate)} estimeret`,
       color: data.completedAt ? 'green' : 'blue',
-      callback: (context) => context.popup({ title: 'Tid på opgaven', url: './card.html', height: 470 }),
+      callback: (context) => context.popup({ title: 'Tid på opgaven', url: './card.html?v=2', height: 470 }),
     }];
   },
   'board-buttons': () => [{
