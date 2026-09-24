@@ -39,7 +39,14 @@ window.TrelloPowerUp.initialize({
         callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=2', height: 470 }),
       }];
     }
-    if (!data.estimate) return [];
+    if (!data.estimate) {
+      return [{
+        title: 'Tid',
+        text: 'Tilføj estimat',
+        color: 'light-gray',
+        callback: (context) => context.popup({ title: 'Tid på opgaven', url: './card.html?v=2', height: 470 }),
+      }];
+    }
     return [{
       title: 'Tid',
       text: data.completedAt ? `${formatHours(data.actual)} faktisk · ${formatHours(data.estimate)} estimeret` : `${formatHours(data.estimate)} estimeret`,
