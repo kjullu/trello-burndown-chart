@@ -1,4 +1,4 @@
-import { BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, defaultSprintDates, formatHours, normalizeTimeData } from './model.js';
+import { BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, defaultSprintDates, formatHours, needsActualTime, normalizeTimeData } from './model.js';
 import { renderChart } from './chart.js';
 
 const demoMode = new URLSearchParams(window.location.search).has('demo');
@@ -12,11 +12,11 @@ const demoTimes = {
 const demoClient = {
   board: async () => ({ name: 'Produktlancering' }),
   cards: async () => [
-    { id: 'c1', name: 'Interview tre pilotkunder', url: '#' },
-    { id: 'c2', name: 'Byg onboarding-flow', url: '#' },
-    { id: 'c3', name: 'Klargør betalingsside', url: '#' },
-    { id: 'c4', name: 'Skriv hjælpetekster', url: '#' },
-    { id: 'c5', name: 'Test mobilvisning', url: '#' },
+    { id: 'c1', name: 'Interview tre pilotkunder', url: '#', dueComplete: true },
+    { id: 'c2', name: 'Byg onboarding-flow', url: '#', dueComplete: true },
+    { id: 'c3', name: 'Klargør betalingsside', url: '#', dueComplete: false },
+    { id: 'c4', name: 'Skriv hjælpetekster', url: '#', dueComplete: true },
+    { id: 'c5', name: 'Test mobilvisning', url: '#', dueComplete: true },
   ],
   get: async (scope, visibility, key, fallback) => key === BOARD_SETTINGS_KEY
     ? { startDate: '2026-09-16', endDate: '2026-09-29' }
@@ -36,11 +36,12 @@ function renderTaskList(tracked) {
   const list = document.querySelector('#task-list');
   list.replaceChildren();
   [...tracked].sort((a, b) => Number(Boolean(a.time.completedAt)) - Number(Boolean(b.time.completedAt))).forEach((card) => {
+    const missingActual = needsActualTime(card);
     const row = document.createElement('article');
-    row.className = `task-row${card.time.completedAt ? ' is-complete' : ''}`;
+    row.className = `task-row${card.time.completedAt ? ' is-complete' : ''}${missingActual ? ' needs-actual' : ''}`;
     const status = document.createElement('span');
     status.className = 'task-status';
-    status.setAttribute('aria-label', card.time.completedAt ? 'Færdig' : 'Åben');
+    status.setAttribute('aria-label', missingActual ? 'Mangler faktisk tid' : card.time.completedAt ? 'Færdig' : 'Åben');
     const text = document.createElement('div');
     const name = document.createElement('a');
     name.href = card.url;
@@ -48,7 +49,11 @@ function renderTaskList(tracked) {
     name.rel = 'noreferrer';
     name.textContent = card.name;
     const detail = document.createElement('small');
-    detail.textContent = card.time.completedAt ? `${formatHours(card.time.actual)} faktisk · ${formatHours(card.time.estimate)} estimeret` : `${formatHours(card.time.estimate)} tilbage`;
+    detail.textContent = missingActual
+      ? `Mangler faktisk tid · ${formatHours(card.time.estimate)} estimeret`
+      : card.time.completedAt
+        ? `${formatHours(card.time.actual)} faktisk · ${formatHours(card.time.estimate)} estimeret`
+        : `${formatHours(card.time.estimate)} tilbage`;
     text.append(name, detail);
     row.append(status, text);
     list.append(row);
@@ -81,7 +86,7 @@ function render(settings) {
 async function load() {
   const [board, trelloCards, storedSettings] = await Promise.all([
     t.board('name'),
-    t.cards('id', 'name', 'url'),
+    t.cards('id', 'name', 'url', 'dueComplete'),
     t.get('board', 'shared', BOARD_SETTINGS_KEY, null),
   ]);
   document.querySelector('#board-title').textContent = board.name;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBurndown, dateRange, normalizeTimeData } from '../src/model.js';
+import { buildBurndown, dateRange, needsActualTime, normalizeTimeData } from '../src/model.js';
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
@@ -31,5 +31,13 @@ describe('buildBurndown', () => {
     const cards = [{ time: { estimate: 4, actual: null, completedAt: null } }];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-02');
     expect(result.points.map((point) => point.actual)).toEqual([4, 4, null]);
+  });
+});
+
+describe('needsActualTime', () => {
+  it('flags a Trello-completed card until actual time is recorded', () => {
+    expect(needsActualTime({ dueComplete: true, time: { completedAt: null } })).toBe(true);
+    expect(needsActualTime({ dueComplete: true, time: { completedAt: '2026-09-24' } })).toBe(false);
+    expect(needsActualTime({ dueComplete: false, time: { completedAt: null } })).toBe(false);
   });
 });

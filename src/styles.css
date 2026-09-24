@@ -99,6 +99,8 @@ input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 228
 .task-row { display: grid; grid-template-columns: 16px 1fr; gap: 12px; align-items: start; border-top: 1px solid var(--line); padding: 14px 3px; }
 .task-status { width: 12px; height: 12px; margin-top: 4px; border: 2px solid var(--blue); border-radius: 50%; }
 .task-row.is-complete .task-status { border-color: var(--green); background: var(--green); box-shadow: inset 0 0 0 2px var(--surface); }
+.task-row.needs-actual .task-status { border-color: var(--red); background: var(--red); box-shadow: inset 0 0 0 2px var(--surface); }
+.task-row.needs-actual small { color: var(--red); font-weight: 500; }
 .task-row div { display: grid; gap: 3px; }
 .task-row a { width: fit-content; color: var(--ink); font-size: 13px; font-weight: 700; text-decoration: none; }
 .task-row a:hover { color: var(--blue); text-decoration: underline; }

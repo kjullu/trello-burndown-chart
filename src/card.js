@@ -18,13 +18,13 @@ function showCompletionFields() {
 
 async function initialize() {
   const [card, stored] = await Promise.all([
-    t.card('name'),
+    t.card('name', 'dueComplete'),
     t.get('card', 'shared', CARD_DATA_KEY, {}),
   ]);
   const data = normalizeTimeData(stored);
   document.querySelector('#card-title').textContent = card.name;
   estimate.value = data.estimate || '';
-  completed.checked = Boolean(data.completedAt);
+  completed.checked = Boolean(data.completedAt || card.dueComplete);
   actual.value = data.actual || '';
   completedAt.value = data.completedAt || localDateKey();
   showCompletionFields();

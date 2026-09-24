@@ -80,3 +80,7 @@ export function formatHours(value) {
   const rounded = Math.round(value * 10) / 10;
   return `${new Intl.NumberFormat('da-DK', { maximumFractionDigits: 1 }).format(rounded)} t`;
 }
+
+export function needsActualTime(card) {
+  return Boolean(card.dueComplete && !card.time?.completedAt);
+}

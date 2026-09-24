@@ -1,4 +1,4 @@
-import { CARD_DATA_KEY, formatHours, normalizeTimeData } from './model.js';
+import { CARD_DATA_KEY, formatHours, needsActualTime, normalizeTimeData } from './model.js';
 
 const icon = new URL('./icon.svg', window.location.href).href;
 
@@ -10,7 +10,14 @@ window.TrelloPowerUp.initialize({
     callback: (t) => t.popup({ title: 'Tid på opgaven', url: './card.html', height: 470 }),
   }],
   'card-badges': async (t) => {
-    const data = normalizeTimeData(await t.get('card', 'shared', CARD_DATA_KEY, {}));
+    const [stored, card] = await Promise.all([
+      t.get('card', 'shared', CARD_DATA_KEY, {}),
+      t.card('dueComplete'),
+    ]);
+    const data = normalizeTimeData(stored);
+    if (needsActualTime({ ...card, time: data })) {
+      return [{ icon, text: 'Mangler faktisk tid', color: 'red' }];
+    }
     if (!data.estimate) return [];
     return [{
       icon,
@@ -19,7 +26,19 @@ window.TrelloPowerUp.initialize({
     }];
   },
   'card-detail-badges': async (t) => {
-    const data = normalizeTimeData(await t.get('card', 'shared', CARD_DATA_KEY, {}));
+    const [stored, card] = await Promise.all([
+      t.get('card', 'shared', CARD_DATA_KEY, {}),
+      t.card('dueComplete'),
+    ]);
+    const data = normalizeTimeData(stored);
+    if (needsActualTime({ ...card, time: data })) {
+      return [{
+        title: 'Tid',
+        text: data.estimate ? `Mangler faktisk tid · ${formatHours(data.estimate)} estimeret` : 'Mangler tidsregistrering',
+        color: 'red',
+        callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html', height: 470 }),
+      }];
+    }
     if (!data.estimate) return [];
     return [{
       title: 'Tid',
