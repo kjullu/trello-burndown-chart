@@ -74,7 +74,7 @@ window.TrelloPowerUp.initialize({
   }],
   'show-settings': (t) => t.popup({
     title: 'Sprintline-indstillinger',
-    url: './settings.html?v=1',
+    url: './settings.html?v=2',
     height: 650,
   }),
 });
