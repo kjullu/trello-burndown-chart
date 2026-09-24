@@ -6,6 +6,8 @@
 
 Sprintline er en Trello Power-Up til tidsestimater, faktisk tidsforbrug og burndown-grafer. Den tilføjer tidsregistrering til kortene og et samlet sprintdashboard til boardet.
 
+Power-Up-ikonet ligger som en færdig PNG i `public/icon.png`. Den redigerbare Aseprite-kildefil ligger i `assets/burnDownChart.aseprite`.
+
 ## Brug den eksisterende version
 
 Du behøver ikke hoste koden selv. Den aktuelle version ligger på:
@@ -23,6 +25,7 @@ Power-Up'en har ingen ekstern database. Tidsdata gemmes på dit eget Trello-boar
 1. Åbn [Trello App Admin](https://trello.com/apps/admin), og vælg **New**.
 2. Vælg **My app will use Power-Up capabilities**.
 3. Udfyld navn, Workspace, email, supportkontakt og forfatter. Supportkontakt er et obligatorisk felt. Du kan bruge din egen emailadresse.
+   Du kan bruge `public/icon.png` som appens ikon.
 4. Indsæt en af følgende adresser som **Iframe Connector URL**:
    - Den eksisterende version: `https://kjullu.github.io/trello-burndown-chart/`
    - Din egen HTTPS-adresse, hvis du selv hoster projektet.
