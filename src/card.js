@@ -22,13 +22,12 @@ function showCompletionFields() {
 
 async function initialize() {
   const [card, stored, storedPreferences] = await Promise.all([
-    t.card('name', 'dueComplete'),
+    t.card('dueComplete'),
     t.get('card', 'shared', CARD_DATA_KEY, {}),
     t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
   ]);
   const data = normalizeTimeData(stored);
   preferences = normalizePreferences(storedPreferences);
-  document.querySelector('#card-title').textContent = card.name;
   estimate.value = data.estimate || preferences.defaultEstimate || '';
   completed.checked = Boolean(data.completedAt || card.dueComplete);
   actual.value = data.actual || (preferences.copyEstimateToActual && completed.checked ? data.estimate || preferences.defaultEstimate : '') || '';
