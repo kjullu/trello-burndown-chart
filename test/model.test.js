@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBurndown, dateRange, defaultSprintDates, needsActualTime, normalizePreferences, normalizeTimeData } from '../src/model.js';
+import { buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, needsActualTime, normalizePreferences, normalizeTimeData } from '../src/model.js';
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
@@ -31,6 +31,20 @@ describe('buildBurndown', () => {
     const cards = [{ time: { estimate: 4, actual: null, completedAt: null } }];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-02');
     expect(result.points.map((point) => point.actual)).toEqual([4, 4, null]);
+  });
+});
+
+describe('buildBurndownCsv', () => {
+  it('exports chart points and leaves future actual values empty', () => {
+    const csv = buildBurndownCsv([
+      { date: '2026-09-01', ideal: 8, actual: 8 },
+      { date: '2026-09-02', ideal: 4, actual: null },
+    ]);
+    expect(csv).toBe([
+      'Dato,Ideelle resterende timer,Faktiske resterende timer',
+      '2026-09-01,8,8',
+      '2026-09-02,4,',
+    ].join('\r\n'));
   });
 });
 

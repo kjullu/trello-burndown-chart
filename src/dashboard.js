@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, defaultSprintDates, formatHours, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatHours, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
 import { renderChart } from './chart.js';
 
 const demoMode = new URLSearchParams(window.location.search).has('demo');
@@ -27,6 +27,29 @@ const t = demoMode ? demoClient : window.TrelloPowerUp.iframe();
 const settingsPanel = document.querySelector('#settings-panel');
 const settingsToggle = document.querySelector('#settings-toggle');
 let cards = [];
+let currentBurndown = null;
+let boardName = '';
+
+function filenamePart(value) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'board';
+}
+
+function downloadCsv() {
+  if (!currentBurndown) return;
+  const csv = buildBurndownCsv(currentBurndown.points);
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filenamePart(boardName)}-burndown-${currentBurndown.startDate}-${currentBurndown.endDate}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 function formatDate(date) {
   return new Intl.DateTimeFormat('da-DK', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`));
@@ -62,6 +85,7 @@ function renderTaskList(tracked) {
 
 function render(settings) {
   const result = buildBurndown(cards, settings);
+  currentBurndown = { ...result, ...settings };
   document.querySelector('#start-date').value = settings.startDate;
   document.querySelector('#end-date').value = settings.endDate;
   document.querySelector('#loading').hidden = true;
@@ -90,6 +114,7 @@ async function load() {
     t.get('board', 'shared', BOARD_SETTINGS_KEY, null),
     t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
   ]);
+  boardName = board.name;
   document.querySelector('#board-title').textContent = board.name;
   cards = await Promise.all(trelloCards.map(async (card) => ({
     ...card,
@@ -105,6 +130,8 @@ settingsToggle.addEventListener('click', () => {
   settingsPanel.hidden = !settingsPanel.hidden;
   settingsToggle.setAttribute('aria-expanded', String(!settingsPanel.hidden));
 });
+
+document.querySelector('#export-csv').addEventListener('click', downloadCsv);
 
 document.querySelector('#settings-form').addEventListener('submit', async (event) => {
   event.preventDefault();

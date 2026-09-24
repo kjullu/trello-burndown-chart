@@ -105,6 +105,19 @@ export function buildBurndown(cards, settings, todayKey = localDateKey()) {
   };
 }
 
+export function buildBurndownCsv(points) {
+  const rows = [
+    ['Dato', 'Ideelle resterende timer', 'Faktiske resterende timer'],
+    ...points.map((point) => [point.date, point.ideal, point.actual ?? '']),
+  ];
+  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
+}
+
+function csvCell(value) {
+  const text = String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
 export function formatHours(value) {
   const rounded = Math.round(value * 10) / 10;
   return `${new Intl.NumberFormat('da-DK', { maximumFractionDigits: 1 }).format(rounded)} t`;
