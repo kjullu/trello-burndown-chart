@@ -13,6 +13,9 @@ function showCompletionFields() {
   fields.hidden = !completed.checked;
   actual.required = completed.checked;
   completedAt.required = completed.checked;
+  if (completed.checked && !actual.value && estimate.value) {
+    actual.value = estimate.value;
+  }
   t.sizeTo('body');
 }
 
@@ -25,7 +28,7 @@ async function initialize() {
   document.querySelector('#card-title').textContent = card.name;
   estimate.value = data.estimate || '';
   completed.checked = Boolean(data.completedAt || card.dueComplete);
-  actual.value = data.actual || '';
+  actual.value = data.actual || (completed.checked ? data.estimate : '') || '';
   completedAt.value = data.completedAt || localDateKey();
   showCompletionFields();
 }
