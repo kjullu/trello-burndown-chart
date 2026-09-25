@@ -39,6 +39,7 @@ export function normalizeTimeData(value = {}) {
     estimate,
     actual: completedAt ? actual : null,
     completedAt,
+    estimateIgnored: estimate ? false : value.estimateIgnored === true,
   };
 }
 

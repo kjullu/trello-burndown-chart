@@ -7,7 +7,7 @@ window.TrelloPowerUp.initialize({
     icon,
     text: 'Tid & afslutning',
     condition: 'edit',
-    callback: (t) => t.popup({ title: 'Registrér faktisk tid', url: './card.html?v=3', height: 350 }),
+    callback: (t) => t.popup({ title: 'Registrér faktisk tid', url: './card.html?v=4', height: 350 }),
   }],
   'card-badges': async (t) => {
     const [stored, card, storedPreferences] = await Promise.all([
@@ -18,7 +18,7 @@ window.TrelloPowerUp.initialize({
     const data = normalizeTimeData(stored);
     const preferences = normalizePreferences(storedPreferences);
     if (!preferences.showCardFrontBadges) return [];
-    if (!data.estimate && preferences.remindMissingEstimate) {
+    if (!data.estimate && preferences.remindMissingEstimate && !data.estimateIgnored) {
       return [{ icon, text: 'Mangler estimat', color: preferences.warningColor, monochrome: false }];
     }
     if (needsActualTime({ ...card, time: data })) {
@@ -47,15 +47,15 @@ window.TrelloPowerUp.initialize({
         title: 'Tid',
         text: data.estimate ? `Mangler faktisk tid · ${formatHours(data.estimate)} estimeret` : 'Mangler tidsregistrering',
         color: preferences.warningColor,
-        callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=3', height: 350 }),
+        callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=4', height: 350 }),
       }];
     }
     if (!data.estimate) {
       return [{
         title: 'Tid',
-        text: 'Tilføj estimat',
+        text: data.estimateIgnored ? 'Estimat ignoreret' : 'Tilføj estimat',
         color: 'light-gray',
-        callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=3', height: 350 }),
+        callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=4', height: 350 }),
       }];
     }
     return [{
@@ -64,7 +64,7 @@ window.TrelloPowerUp.initialize({
       color: data.completedAt
         ? preferences.warnOverEstimate && data.actual > data.estimate ? preferences.warningColor : preferences.completedColor
         : preferences.activeColor,
-      callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=3', height: 350 }),
+      callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=4', height: 350 }),
     }];
   },
   'board-buttons': () => [{

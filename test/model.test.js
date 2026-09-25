@@ -3,7 +3,12 @@ import { buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, needsAc
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
-    expect(normalizeTimeData({ estimate: '4', actual: '-2', completedAt: 'nope' })).toEqual({ estimate: 4, actual: null, completedAt: null });
+    expect(normalizeTimeData({ estimate: '4', actual: '-2', completedAt: 'nope' })).toEqual({ estimate: 4, actual: null, completedAt: null, estimateIgnored: false });
+  });
+
+  it('keeps the missing-estimate ignore flag only while no estimate is set', () => {
+    expect(normalizeTimeData({ estimateIgnored: true })).toEqual({ estimate: null, actual: null, completedAt: null, estimateIgnored: true });
+    expect(normalizeTimeData({ estimate: '3', estimateIgnored: true })).toEqual({ estimate: 3, actual: null, completedAt: null, estimateIgnored: false });
   });
 });
 

@@ -7,8 +7,11 @@ const fields = document.querySelector('#actual-fields');
 const estimate = document.querySelector('#estimate');
 const actual = document.querySelector('#actual');
 const completedAt = document.querySelector('#completed-at');
+const ignorePanel = document.querySelector('#ignore-panel');
+const ignored = document.querySelector('#estimate-ignored');
 const error = document.querySelector('#form-error');
 let preferences = DEFAULT_PREFERENCES;
+let storedEstimate = null;
 
 function showCompletionFields() {
   fields.hidden = !completed.checked;
@@ -28,14 +31,28 @@ async function initialize() {
   ]);
   const data = normalizeTimeData(stored);
   preferences = normalizePreferences(storedPreferences);
-  estimate.value = data.estimate || preferences.defaultEstimate || '';
+  storedEstimate = data.estimate;
+  ignored.checked = Boolean(data.estimateIgnored);
+  estimate.value = data.estimate || (ignored.checked ? '' : preferences.defaultEstimate) || '';
   completed.checked = Boolean(data.completedAt || card.dueComplete);
   actual.value = data.actual || (preferences.copyEstimateToActual && completed.checked ? data.estimate || preferences.defaultEstimate : '') || '';
   completedAt.value = data.completedAt || localDateKey();
+  syncIgnoreState();
   showCompletionFields();
 }
 
+function syncIgnoreState() {
+  ignorePanel.hidden = !(preferences.remindMissingEstimate && !storedEstimate);
+  estimate.required = !(!ignorePanel.hidden && ignored.checked);
+  if (!ignorePanel.hidden && ignored.checked) estimate.value = '';
+  t.sizeTo('body');
+}
+
 completed.addEventListener('change', showCompletionFields);
+ignored.addEventListener('change', () => {
+  if (!ignored.checked) estimate.value = storedEstimate || preferences.defaultEstimate || '';
+  syncIgnoreState();
+});
 document.querySelector('#cancel').addEventListener('click', () => t.closePopup());
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -44,8 +61,9 @@ form.addEventListener('submit', async (event) => {
     estimate: estimate.value,
     actual: completed.checked ? actual.value : null,
     completedAt: completed.checked ? completedAt.value : null,
+    estimateIgnored: ignored.checked,
   });
-  if (!data.estimate || (completed.checked && (!data.actual || !data.completedAt))) {
+  if ((!data.estimate && !ignored.checked) || (completed.checked && (!data.actual || !data.completedAt))) {
     error.textContent = 'Udfyld estimatet og den faktiske tid med tal over 0.';
     error.hidden = false;
     return;
