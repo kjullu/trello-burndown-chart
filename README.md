@@ -2,7 +2,7 @@
 
 > [!WARNING]
 > **Early Access:** Sprintline er stadig under udvikling. Funktioner, brugerflade og dataformat kan ændre sig, og fejl kan forekomme. Test Power-Up'en på et ikke-kritisk board, før du bruger den til et aktivt projekt.
-> **Der kommer også hurtige opdateringer, så hvis det er noget som er kritisk skal du [Host projektet selv](#host-projektet-selv)
+> **Der kommer også hurtige opdateringer, så hvis det er noget som er kritisk skal du [Host projektet selv](#host-projektet-selv)**
 
 Sprintline er en Trello Power-Up til tidsestimater, faktisk tidsforbrug og burndown-grafer. Den tilføjer tidsregistrering til kortene og et samlet sprintdashboard til boardet.
 
