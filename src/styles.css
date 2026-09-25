@@ -69,9 +69,9 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .card-form-shell .number-input input { min-height: 50px; padding-inline: 14px; font-size: 15px; font-weight: 600; }
 .card-form-shell .number-input span { padding-right: 15px; font-size: 13px; }
 .card-form-shell .completion-panel { margin-top: 20px; border-radius: 7px; }
-.card-form-shell .check-row { align-items: center; min-height: 82px; gap: 16px; padding: 20px 24px; }
+.card-form-shell .check-row { align-items: center; min-height: 0; gap: 16px; padding: 16px 24px; }
 .card-form-shell .check-row input { width: 20px; height: 20px; }
-.card-form-shell .check-row strong { font-size: 16px; }
+.card-form-shell .check-row strong { font-size: 14px; }
 .card-form-shell .actual-fields { gap: 16px; padding: 18px; }
 .card-form-shell .actual-fields input[type='date'] { min-height: 50px; font-size: 14px; }
 .card-form-shell .form-actions { gap: 16px; margin-top: 28px; }
