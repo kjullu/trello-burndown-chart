@@ -71,13 +71,6 @@ export function dateRange(start, end) {
   return days;
 }
 
-export function workDayRange(start, end) {
-  return dateRange(start, end).filter((date) => {
-    const day = new Date(`${date}T12:00:00`).getDay();
-    return day !== 0 && day !== 6;
-  });
-}
-
 export function defaultSprintDates(today = new Date(), durationDays = DEFAULT_PREFERENCES.defaultSprintDays) {
   const start = new Date(today);
   const end = new Date(today);
@@ -88,16 +81,16 @@ export function defaultSprintDates(today = new Date(), durationDays = DEFAULT_PR
 export function buildBurndown(cards, settings, todayKey = localDateKey()) {
   const tracked = cards.filter((card) => card.time?.estimate);
   const totalEstimate = tracked.reduce((sum, card) => sum + card.time.estimate, 0);
-  const days = workDayRange(settings.startDate, settings.endDate);
+  const days = dateRange(settings.startDate, settings.endDate);
   const lastActualDay = todayKey < settings.endDate ? todayKey : settings.endDate;
   const points = days.map((date, index) => {
-    const remaining = tracked
-      .filter((card) => !card.time.completedAt || card.time.completedAt > date)
+    const burned = tracked
+      .filter((card) => card.time.completedAt && card.time.completedAt <= date)
       .reduce((sum, card) => sum + card.time.estimate, 0);
     return {
       date,
       ideal: days.length <= 1 ? 0 : totalEstimate * (1 - index / (days.length - 1)),
-      actual: date <= lastActualDay ? remaining : null,
+      actual: date <= lastActualDay ? Math.max(0, totalEstimate - burned) : null,
     };
   });
   const completed = tracked.filter((card) => card.time.completedAt);

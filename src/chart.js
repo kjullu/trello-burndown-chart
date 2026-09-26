@@ -32,7 +32,9 @@ export function renderChart(container, points, totalEstimate) {
   const idealPath = points.map((point, index) => `${index ? 'L' : 'M'} ${x(index)} ${y(point.ideal)}`).join(' ');
   const actualPoints = points.filter((point) => point.actual !== null);
   const actualPath = actualPoints.map((point, index) => `${index ? 'L' : 'M'} ${x(points.indexOf(point))} ${y(point.actual)}`).join(' ');
+  const areaPath = actualPoints.length ? `${actualPath} L ${x(points.indexOf(actualPoints.at(-1)))} ${y(0)} L ${x(0)} ${y(0)} Z` : '';
   svg.append(svgElement('path', { d: idealPath, class: 'ideal-line' }));
+  if (areaPath) svg.append(svgElement('path', { d: areaPath, class: 'actual-area' }));
   if (actualPath) svg.append(svgElement('path', { d: actualPath, class: 'actual-line' }));
   actualPoints.forEach((point) => svg.append(svgElement('circle', { cx: x(points.indexOf(point)), cy: y(point.actual), r: 5, class: 'actual-dot' })));
 

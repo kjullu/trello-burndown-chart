@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, needsActualTime, normalizePreferences, normalizeTimeData, workDayRange } from '../src/model.js';
+import { buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, needsActualTime, normalizePreferences, normalizeTimeData } from '../src/model.js';
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
@@ -15,18 +15,6 @@ describe('time data', () => {
 describe('dateRange', () => {
   it('includes both sprint boundaries', () => {
     expect(dateRange('2026-09-01', '2026-09-03')).toEqual(['2026-09-01', '2026-09-02', '2026-09-03']);
-  });
-});
-
-describe('workDayRange', () => {
-  it('skips weekends while keeping both boundaries when they fall on weekdays', () => {
-    expect(workDayRange('2026-09-07', '2026-09-11')).toEqual(['2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11']);
-  });
-
-  it('exposes only the weekdays inside a calendar range that spans a weekend', () => {
-    expect(workDayRange('2026-09-04', '2026-09-14')).toEqual([
-      '2026-09-04', '2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11', '2026-09-14',
-    ]);
   });
 });
 
@@ -48,18 +36,6 @@ describe('buildBurndown', () => {
     const cards = [{ time: { estimate: 4, actual: null, completedAt: null } }];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-02');
     expect(result.points.map((point) => point.actual)).toEqual([4, 4, null]);
-  });
-
-  it('plots workdays only and positions completions on the nearest plotted day', () => {
-    const cards = [
-      { time: { estimate: 8, actual: null, completedAt: '2026-09-05' } },
-      { time: { estimate: 5, actual: null, completedAt: null } },
-    ];
-    const result = buildBurndown(cards, { startDate: '2026-09-04', endDate: '2026-09-14' }, '2026-09-14');
-    expect(result.points.map((point) => point.date)).toEqual([
-      '2026-09-04', '2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11', '2026-09-14',
-    ]);
-    expect(result.points.map((point) => point.actual)).toEqual([13, 5, 5, 5, 5, 5, 5]);
   });
 });
 
