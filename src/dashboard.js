@@ -102,7 +102,7 @@ function render(settings, preferences) {
   const variance = result.variance;
   document.querySelector('#variance').textContent = `${variance > 0 ? '+' : ''}${formatHours(variance)}`;
   document.querySelector('#variance').className = variance > 0 ? 'metric-warning' : '';
-  document.querySelector('#velocity').textContent = result.velocity === null ? '–' : `${formatHours(result.velocity)} / dag`;
+  document.querySelector('#velocity').textContent = result.velocity === null ? '–' : `${formatHours(result.velocity)} / arbejdsdag`;
   document.querySelector('#efficiency').textContent = result.measuredEfficiency === null
     ? `${Math.round(result.plannedEfficiency * 100)}% (planlagt)`
     : `${Math.round(result.efficiency * 100)}%`;

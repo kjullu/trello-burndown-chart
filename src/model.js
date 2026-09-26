@@ -131,6 +131,21 @@ export function addDays(dateKey, days) {
   return localDateKey(cursor);
 }
 
+function isWorkDay(dateKey) {
+  const day = new Date(`${dateKey}T12:00:00`).getDay();
+  return day !== 0 && day !== 6;
+}
+
+export function addWorkDays(dateKey, days) {
+  let cursor = dateKey;
+  let remaining = Math.max(0, Math.trunc(days));
+  while (remaining > 0) {
+    cursor = addDays(cursor, 1);
+    if (isWorkDay(cursor)) remaining -= 1;
+  }
+  return cursor;
+}
+
 export function diffDays(fromKey, toKey) {
   const from = new Date(`${fromKey}T12:00:00`);
   const to = new Date(`${toKey}T12:00:00`);
@@ -149,6 +164,10 @@ export function dateRange(start, end) {
   return days;
 }
 
+export function workDayRange(start, end) {
+  return dateRange(start, end).filter(isWorkDay);
+}
+
 export function defaultSprintDates(today = new Date(), durationDays = DEFAULT_PREFERENCES.defaultSprintDays) {
   const start = new Date(today);
   const end = new Date(today);
@@ -160,49 +179,58 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   const hoursPerDay = boundedNumber(capacity.hoursPerDay, 1, 24) ?? DEFAULT_PREFERENCES.hoursPerDay;
   const teamSize = boundedNumber(capacity.teamSize, 1, 50) ?? DEFAULT_PREFERENCES.teamSize;
   const plannedEfficiency = boundedNumber(capacity.efficiencyFactor, 0.1, 3) ?? DEFAULT_PREFERENCES.efficiencyFactor;
-  const days = dateRange(settings.startDate, settings.endDate);
+  const sprintDays = workDayRange(settings.startDate, settings.endDate);
 
   const normalized = cards.map((card) => ({ ...card, time: normalizeTimeData(card.time) }));
-  const remainingOf = (card, dateKey) => (card.time.completedAt && card.time.completedAt <= dateKey
+  const remainingOf = (card, dateKey) => (card.time.completedAt && card.time.completedAt < dateKey
     ? 0
     : estimateAsOf(card.time, dateKey));
   const remainingOn = (dateKey) => normalized.reduce((sum, card) => sum + remainingOf(card, dateKey), 0);
 
-  const baseline = days.length ? remainingOn(days[0]) : 0;
+  const baseline = sprintDays.length ? remainingOn(sprintDays[0]) : remainingOn(settings.startDate);
   const lastActualDay = todayKey < settings.endDate ? todayKey : settings.endDate;
+  const observationDay = todayKey < settings.startDate
+    ? settings.startDate
+    : todayKey > settings.endDate ? settings.endDate : todayKey;
   const completed = normalized.filter((card) => card.time.completedAt
     && card.time.completedAt >= settings.startDate
-    && card.time.completedAt <= settings.endDate);
+    && card.time.completedAt <= observationDay);
   const totalActual = completed.reduce((sum, card) => sum + (card.time.actual || 0), 0);
   const completedEstimate = completed.reduce((sum, card) => sum + estimateAsOf(card.time, card.time.completedAt), 0);
 
-  const elapsedDays = lastActualDay >= settings.startDate ? Math.max(1, dateRange(settings.startDate, lastActualDay).length) : 0;
+  const elapsedDays = lastActualDay >= settings.startDate ? Math.max(1, workDayRange(settings.startDate, lastActualDay).length) : 0;
   const velocity = elapsedDays > 0 && completedEstimate > 0 ? completedEstimate / elapsedDays : null;
   const measuredEfficiency = totalActual > 0 ? completedEstimate / totalActual : null;
   const efficiency = measuredEfficiency ?? plannedEfficiency;
   const burnRate = hoursPerDay * teamSize * efficiency;
 
-  const remaining = remainingOn(todayKey < settings.startDate ? settings.startDate : todayKey);
+  const remaining = remainingOn(observationDay);
   const predictedDays = baseline > 0 && burnRate > 0 ? Math.ceil(baseline / burnRate) : 0;
-  const predictedEndDate = predictedDays > 0 ? addDays(settings.startDate, predictedDays - 1) : null;
+  const predictedEndDate = predictedDays > 0 ? addWorkDays(sprintDays[0] ?? settings.startDate, predictedDays - 1) : null;
   const projectedDays = remaining > 0 && burnRate > 0 ? Math.ceil(remaining / burnRate) : 0;
   const projectionOrigin = lastActualDay >= settings.startDate ? lastActualDay : settings.startDate;
-  const projectedEndDate = projectedDays > 0 ? addDays(projectionOrigin, projectedDays) : projectionOrigin;
+  const projectedEndDate = projectedDays > 0 ? addWorkDays(projectionOrigin, projectedDays) : projectionOrigin;
 
+  const projectionExtension = projectedEndDate > settings.endDate
+    ? workDayRange(addDays(settings.endDate, 1), projectedEndDate)
+    : [];
+  const days = [...sprintDays, ...projectionExtension];
   const points = days.map((date, index) => ({
     date,
-    ideal: days.length <= 1 ? 0 : baseline * (1 - index / (days.length - 1)),
-    actual: date <= lastActualDay ? Math.max(0, remainingOn(date)) : null,
+    ideal: index >= sprintDays.length
+      ? null
+      : sprintDays.length <= 1 ? 0 : baseline * (1 - index / (sprintDays.length - 1)),
+    actual: date <= lastActualDay && date <= settings.endDate ? Math.max(0, remainingOn(date)) : null,
     projection: null,
   }));
 
   const projectionStart = points.reduce((last, point, index) => (point.actual === null ? last : index), -1);
-  if (projectionStart >= 0 && days.length) {
+  if (projectionStart >= 0 && points.length) {
     const from = points[projectionStart].actual;
-    const projectionEnd = diffDays(days[0], projectedEndDate);
+    const projectionEnd = points.findIndex((point) => point.date === projectedEndDate);
     const span = Math.max(1, projectionEnd - projectionStart);
     points.forEach((point, index) => {
-      if (index < projectionStart) return;
+      if (index < projectionStart || index > projectionEnd) return;
       point.projection = Math.max(0, from * (1 - (index - projectionStart) / span));
     });
   }
@@ -210,7 +238,7 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   const tracked = normalized.filter((card) => {
     if (card.time.completedAt && card.time.completedAt < settings.startDate) return false;
     if (card.time.completedAt && card.time.completedAt <= settings.endDate) return true;
-    return Boolean(card.time.estimate) && days.some((day) => remainingOf(card, day) > 0);
+    return Boolean(card.time.estimate) && sprintDays.some((day) => remainingOf(card, day) > 0);
   });
 
   return {

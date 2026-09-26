@@ -72,14 +72,14 @@
             <span class="number-input"><input id="team-size" type="number" min="1" max="50" step="1" required /><span>personer</span></span>
           </label>
           <label class="field">
-            <span>Arbejdstimer pr. dag</span>
+            <span>Arbejdstimer pr. arbejdsdag</span>
             <span class="number-input"><input id="hours-per-day" type="number" min="1" max="24" step="0.5" required /><span>timer</span></span>
           </label>
           <label class="field">
             <span>Effektivitetsfaktor</span>
             <span class="number-input"><input id="efficiency-factor" type="number" min="0.1" max="3" step="0.05" required /><span>×</span></span>
           </label>
-          <p class="helper-text">Prognosen regner <strong>resterende timer ÷ (timer pr. dag × medarbejdere × effektivitet)</strong>. Effektivitet under 1 betyder, at arbejdet tager længere tid end estimeret. Faktoren genberegnes automatisk ud fra faktisk tidsforbrug.</p>
+          <p class="helper-text">Prognosen regner <strong>resterende timer ÷ (timer pr. arbejdsdag × medarbejdere × effektivitet)</strong>. Weekender tæller ikke med. Effektivitet under 1 betyder, at arbejdet tager længere tid end estimeret. Faktoren genberegnes automatisk ud fra faktisk tidsforbrug.</p>
         </section>
 
         <p id="settings-error" class="form-message error" role="alert" hidden></p>

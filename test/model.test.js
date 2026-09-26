@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, needsActualTime, normalizePreferences, normalizeTimeData, recordEstimateChange } from '../src/model.js';
+import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, needsActualTime, normalizePreferences, normalizeTimeData, recordEstimateChange, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
@@ -41,6 +41,10 @@ describe('estimate history', () => {
     expect(recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-10', 7)).toEqual([{ date: '2026-09-10', estimate: 7 }]);
   });
 
+  it('can record a backfilled estimate as existing before the sprint', () => {
+    expect(recordEstimateChange([], null, 7)).toEqual([{ date: null, estimate: 7 }]);
+  });
+
   it('drops an estimate from the day it is removed', () => {
     const history = recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-14', null);
     expect(history).toEqual([{ date: '2026-09-10', estimate: 5 }, { date: '2026-09-14', estimate: null }]);
@@ -59,6 +63,11 @@ describe('date helpers', () => {
     expect(diffDays('2026-09-01', '2026-09-05')).toBe(4);
     expect(diffDays('2026-09-05', '2026-09-01')).toBe(-4);
   });
+
+  it('lists and advances through workdays only', () => {
+    expect(workDayRange('2026-09-04', '2026-09-08')).toEqual(['2026-09-04', '2026-09-07', '2026-09-08']);
+    expect(addWorkDays('2026-09-11', 5)).toBe('2026-09-18');
+  });
 });
 
 describe('buildBurndown', () => {
@@ -69,7 +78,7 @@ describe('buildBurndown', () => {
       { time: { estimate: null, actual: null, completedAt: null } },
     ];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-03');
-    expect(result.points.map((point) => point.actual)).toEqual([8, 3, 3]);
+    expect(result.points.filter((point) => point.date <= '2026-09-03').map((point) => point.actual)).toEqual([8, 8, 3]);
     expect(result.remaining).toBe(3);
     expect(result.variance).toBe(2);
     expect(result.completedCount).toBe(1);
@@ -81,13 +90,21 @@ describe('buildBurndown', () => {
     expect(result.points.map((point) => point.actual)).toEqual([4, 4, null]);
   });
 
+  it('plots sprint and forecast points on workdays only', () => {
+    const cards = [{ time: { estimate: 8, actual: null, completedAt: null } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-04', endDate: '2026-09-08' }, '2026-09-08', { hoursPerDay: 8 });
+    expect(result.points.filter((point) => point.date <= '2026-09-08').map((point) => point.date)).toEqual([
+      '2026-09-04', '2026-09-07', '2026-09-08',
+    ]);
+  });
+
   it('shows only the work that existed on each day instead of rewriting the past', () => {
     const cards = [
       { time: { estimate: 10, estimateHistory: [{ date: '2026-09-01', estimate: 10 }] } },
       { time: { estimate: 10, estimateHistory: [{ date: '2026-09-03', estimate: 10 }] } },
     ];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
-    expect(result.points.map((point) => point.actual)).toEqual([10, 10, 20, 20]);
+    expect(result.points.filter((point) => point.date <= '2026-09-04').map((point) => point.actual)).toEqual([10, 10, 20, 20]);
     expect(result.baseline).toBe(10);
   });
 
@@ -116,13 +133,29 @@ describe('buildBurndown', () => {
     expect(result.tracked.map((card) => card.time.estimate)).toEqual([10]);
   });
 
+  it('keeps work completed on the first sprint day in the starting backlog', () => {
+    const cards = [{ time: { estimate: 8, actual: 8, completedAt: '2026-09-01' } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-02');
+    expect(result.baseline).toBe(8);
+    expect(result.points.map((point) => point.actual)).toEqual([8, 0, null]);
+    expect(result.variance).toBe(0);
+  });
+
+  it('clamps historical headline values to the sprint end', () => {
+    const cards = [{ time: { estimate: 8, actual: 8, completedAt: '2026-09-10' } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-07' }, '2026-09-20');
+    expect(result.points.find((point) => point.date === '2026-09-07').actual).toBe(8);
+    expect(result.remaining).toBe(8);
+    expect(result.completedCount).toBe(0);
+  });
+
   it('reports velocity and the measured efficiency factor', () => {
     const cards = [
       { time: { estimate: 8, actual: 10, completedAt: '2026-09-02' } },
       { time: { estimate: 8, actual: 8, completedAt: '2026-09-04' } },
     ];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-07' }, '2026-09-07', { hoursPerDay: 8, teamSize: 1, efficiencyFactor: 1 });
-    expect(result.velocity).toBe(16 / 7);
+    expect(result.velocity).toBe(16 / 5);
     expect(result.measuredEfficiency).toBe(16 / 18);
     expect(result.efficiency).toBeCloseTo(16 / 18, 10);
   });
@@ -139,7 +172,7 @@ describe('buildBurndown', () => {
     const cards = [{ time: { estimate: 28, actual: null, completedAt: null } }];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-10-31' }, '2026-09-01', { hoursPerDay: 1, teamSize: 2, efficiencyFactor: 0.7 });
     expect(result.predictedDays).toBe(20);
-    expect(result.predictedEndDate).toBe(addDays('2026-09-01', 19));
+    expect(result.predictedEndDate).toBe('2026-09-28');
   });
 
   it('projects the remaining work from the current position', () => {
@@ -147,7 +180,15 @@ describe('buildBurndown', () => {
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-30' }, '2026-09-11', { hoursPerDay: 4, teamSize: 1, efficiencyFactor: 1 });
     expect(result.remaining).toBe(20);
     expect(result.projectedDays).toBe(5);
-    expect(result.projectedEndDate).toBe(addDays('2026-09-11', 5));
+    expect(result.projectedEndDate).toBe('2026-09-18');
+  });
+
+  it('extends the chart through a prognosis after the sprint end', () => {
+    const cards = [{ time: { estimate: 40, actual: null, completedAt: null } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-07' }, '2026-09-04', { hoursPerDay: 8, teamSize: 1, efficiencyFactor: 1 });
+    expect(result.projectedEndDate).toBe('2026-09-11');
+    expect(result.points.at(-1)).toMatchObject({ date: '2026-09-11', ideal: null, actual: null, projection: 0 });
+    expect(result.points.map((point) => point.date)).not.toContain('2026-09-06');
   });
 });
 

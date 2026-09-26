@@ -71,15 +71,15 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 
 Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
 
-Værdien på den blå linje er **summen af den indsats, der stadig var tilbage på den pågældende dag** — ikke en løbende nedskrivning af en fast total. Det betyder, at en opgave der tilføjes midt i sprinten først tæller fra den dag, den får et estimat, og at estimatændringer ikke ændrer fortiden. Den ideelle linje starter ved det backlog, der var ved sprintens start, og ender ved nul på sprintens sidste dag. Et kort der allerede var afsluttet før sprinten, tæller ikke med.
+Værdien på den blå linje er **summen af den indsats, der var tilbage ved arbejdsdagens start** — ikke en løbende nedskrivning af en fast total. Det betyder, at en opgave der tilføjes midt i sprinten først tæller fra den dag, den får et estimat, og at estimatændringer ikke ændrer fortiden. Arbejde, der afsluttes på en given dato, er derfor brændt af ved næste punkt. Den ideelle linje starter ved det backlog, der var ved sprintens start, og ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender vises ikke på tidsaksen.
 
 ### Prognose, velocity og effektivitet
 
-- **Velocity** er den estimerede mængde arbejde, der er afbrændt pr. dag i sprinten.
+- **Velocity** er den estimerede mængde arbejde, der er afbrændt pr. arbejdsdag i sprinten.
 - **Effektivitet** er forholdet mellem det estimerede og det faktiske tidsforbrug på de afsluttede opgaver. En faktor på 100 % betyder, at arbejdet tog lige så lang tid som estimeret. Under 100 % tager det længere tid. Faktoren genberegnes automatisk i takt med at faktisk tid registreres; indtil da bruges den planlagte faktor fra indstillingerne.
-- **Prognose** er den dato, hvor det resterende arbejde forventes færdigt, udregnet som `resterende timer ÷ (arbejdstimer pr. dag × antal medarbejdere × effektivitet)`. Hvis prognosen er efter slutdatoen, vises datoen med advarselsfarven.
+- **Prognose** er den arbejdsdag, hvor det resterende arbejde forventes færdigt, udregnet som `resterende timer ÷ (arbejdstimer pr. arbejdsdag × antal medarbejdere × effektivitet)`. Den røde prognoselinje fortsætter efter sprintens slutdato, hvis arbejdet forventes færdigt senere. I så fald vises datoen også med advarselsfarven.
 
-Den samme formel bruges til at forudsige hele sprintens varighed fra starten: `(samlet estimat ÷ (arbejdstimer pr. dag × medarbejdere)) ÷ effektivitet`. Det er den faktor, der kompenserer for systematiske skøvvrid i estimaterne, så et hold der konsekvent overestimerer ikke altid ser ud til at være foran planen.
+Den samme formel bruges til at forudsige hele sprintens varighed fra starten: `(samlet estimat ÷ (arbejdstimer pr. arbejdsdag × medarbejdere)) ÷ effektivitet`. Det er den faktor, der kompenserer for systematiske skævvrid i estimaterne, så et hold der konsekvent overestimerer ikke altid ser ud til at være foran planen.
 
 ### Tilpas indstillingerne
 
