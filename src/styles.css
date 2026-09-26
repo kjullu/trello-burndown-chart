@@ -116,7 +116,6 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .grid-line { stroke: var(--grid); stroke-width: 1; }
 .axis-label { fill: var(--muted); font: 500 12px 'DM Mono', monospace; }
 .ideal-line { fill: none; stroke: #8993a4; stroke-width: 2; stroke-dasharray: 7 7; }
-.actual-area { fill: url('#actual-gradient'); fill: rgba(12, 102, 228, 0.08); }
 .actual-line { fill: none; stroke: var(--blue); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
 .actual-dot { fill: var(--surface); stroke: var(--blue); stroke-width: 3; }
 .task-section { margin-top: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 22px; background: var(--surface); box-shadow: var(--shadow); }
