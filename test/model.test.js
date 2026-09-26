@@ -1,20 +1,63 @@
 import { describe, expect, it } from 'vitest';
-import { buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, needsActualTime, normalizePreferences, normalizeTimeData } from '../src/model.js';
+import { addDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, needsActualTime, normalizePreferences, normalizeTimeData, recordEstimateChange } from '../src/model.js';
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
-    expect(normalizeTimeData({ estimate: '4', actual: '-2', completedAt: 'nope' })).toEqual({ estimate: 4, actual: null, completedAt: null, estimateIgnored: false });
+    expect(normalizeTimeData({ estimate: '4', actual: '-2', completedAt: 'nope' })).toEqual({
+      estimate: 4,
+      actual: null,
+      completedAt: null,
+      estimateIgnored: false,
+      estimateHistory: [{ date: null, estimate: 4 }],
+    });
   });
 
   it('keeps the missing-estimate ignore flag only while no estimate is set', () => {
-    expect(normalizeTimeData({ estimateIgnored: true })).toEqual({ estimate: null, actual: null, completedAt: null, estimateIgnored: true });
-    expect(normalizeTimeData({ estimate: '3', estimateIgnored: true })).toEqual({ estimate: 3, actual: null, completedAt: null, estimateIgnored: false });
+    expect(normalizeTimeData({ estimateIgnored: true })).toEqual({ estimate: null, actual: null, completedAt: null, estimateIgnored: true, estimateHistory: [] });
+    expect(normalizeTimeData({ estimate: '3', estimateIgnored: true })).toEqual({ estimate: 3, actual: null, completedAt: null, estimateIgnored: false, estimateHistory: [{ date: null, estimate: 3 }] });
   });
 });
 
-describe('dateRange', () => {
+describe('estimate history', () => {
+  it('reads the estimate that was in force on a given day', () => {
+    const time = normalizeTimeData({ estimate: 8, estimateHistory: [{ date: '2026-09-10', estimate: 5 }, { date: '2026-09-15', estimate: 8 }] });
+    expect(estimateAsOf(time, '2026-09-01')).toBe(0);
+    expect(estimateAsOf(time, '2026-09-10')).toBe(5);
+    expect(estimateAsOf(time, '2026-09-14')).toBe(5);
+    expect(estimateAsOf(time, '2026-09-15')).toBe(8);
+    expect(estimateAsOf(time, '2026-09-20')).toBe(8);
+  });
+
+  it('appends a point when the estimate changes and skips no-op saves', () => {
+    expect(recordEstimateChange([], '2026-09-10', 5)).toEqual([{ date: '2026-09-10', estimate: 5 }]);
+    expect(recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-12', 5)).toEqual([{ date: '2026-09-10', estimate: 5 }]);
+    expect(recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-12', 9)).toEqual([
+      { date: '2026-09-10', estimate: 5 },
+      { date: '2026-09-12', estimate: 9 },
+    ]);
+  });
+
+  it('rewrites a same-day change instead of stacking points', () => {
+    expect(recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-10', 7)).toEqual([{ date: '2026-09-10', estimate: 7 }]);
+  });
+
+  it('drops an estimate from the day it is removed', () => {
+    const history = recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-14', null);
+    expect(history).toEqual([{ date: '2026-09-10', estimate: 5 }, { date: '2026-09-14', estimate: null }]);
+    expect(estimateAsOf(normalizeTimeData({ estimateHistory: history }), '2026-09-13')).toBe(5);
+    expect(estimateAsOf(normalizeTimeData({ estimateHistory: history }), '2026-09-14')).toBe(0);
+  });
+});
+
+describe('date helpers', () => {
   it('includes both sprint boundaries', () => {
     expect(dateRange('2026-09-01', '2026-09-03')).toEqual(['2026-09-01', '2026-09-02', '2026-09-03']);
+  });
+
+  it('adds and diffs calendar days', () => {
+    expect(addDays('2026-09-01', 4)).toBe('2026-09-05');
+    expect(diffDays('2026-09-01', '2026-09-05')).toBe(4);
+    expect(diffDays('2026-09-05', '2026-09-01')).toBe(-4);
   });
 });
 
@@ -37,18 +80,87 @@ describe('buildBurndown', () => {
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-02');
     expect(result.points.map((point) => point.actual)).toEqual([4, 4, null]);
   });
+
+  it('shows only the work that existed on each day instead of rewriting the past', () => {
+    const cards = [
+      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-01', estimate: 10 }] } },
+      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-03', estimate: 10 }] } },
+    ];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
+    expect(result.points.map((point) => point.actual)).toEqual([10, 10, 20, 20]);
+    expect(result.baseline).toBe(10);
+  });
+
+  it('anchors the ideal line at the sprint-start backlog', () => {
+    const cards = [
+      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-01', estimate: 10 }] } },
+      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-03', estimate: 10 }] } },
+    ];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
+    const ideal = result.points.map((point) => point.ideal);
+    expect(ideal[0]).toBe(10);
+    expect(ideal[3]).toBe(0);
+    expect(ideal[1]).toBeCloseTo(10 * (1 - 1 / 3), 10);
+    expect(ideal[2]).toBeCloseTo(10 * (1 - 2 / 3), 10);
+  });
+
+  it('starts the actual line at the ideal line', () => {
+    const cards = [
+      { time: { estimate: 10, actual: 9, completedAt: '2026-08-20' } },
+      { time: { estimate: 10, actual: null, completedAt: null } },
+    ];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
+    expect(result.points[0].actual).toBe(result.points[0].ideal);
+    expect(result.points[0].actual).toBe(10);
+    expect(result.completedCount).toBe(0);
+    expect(result.tracked.map((card) => card.time.estimate)).toEqual([10]);
+  });
+
+  it('reports velocity and the measured efficiency factor', () => {
+    const cards = [
+      { time: { estimate: 8, actual: 10, completedAt: '2026-09-02' } },
+      { time: { estimate: 8, actual: 8, completedAt: '2026-09-04' } },
+    ];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-07' }, '2026-09-07', { hoursPerDay: 8, teamSize: 1, efficiencyFactor: 1 });
+    expect(result.velocity).toBe(16 / 7);
+    expect(result.measuredEfficiency).toBe(16 / 18);
+    expect(result.efficiency).toBeCloseTo(16 / 18, 10);
+  });
+
+  it('falls back to the planned efficiency when nothing is recorded yet', () => {
+    const cards = [{ time: { estimate: 14, actual: null, completedAt: null } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-07' }, '2026-09-02', { hoursPerDay: 7, teamSize: 1, efficiencyFactor: 0.7 });
+    expect(result.measuredEfficiency).toBeNull();
+    expect(result.efficiency).toBe(0.7);
+    expect(result.burnRate).toBeCloseTo(7 * 0.7, 10);
+  });
+
+  it('predicts the finish from work divided by workers divided by efficiency', () => {
+    const cards = [{ time: { estimate: 28, actual: null, completedAt: null } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-10-31' }, '2026-09-01', { hoursPerDay: 1, teamSize: 2, efficiencyFactor: 0.7 });
+    expect(result.predictedDays).toBe(20);
+    expect(result.predictedEndDate).toBe(addDays('2026-09-01', 19));
+  });
+
+  it('projects the remaining work from the current position', () => {
+    const cards = [{ time: { estimate: 20, actual: null, completedAt: null } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-30' }, '2026-09-11', { hoursPerDay: 4, teamSize: 1, efficiencyFactor: 1 });
+    expect(result.remaining).toBe(20);
+    expect(result.projectedDays).toBe(5);
+    expect(result.projectedEndDate).toBe(addDays('2026-09-11', 5));
+  });
 });
 
 describe('buildBurndownCsv', () => {
   it('exports chart points and leaves future actual values empty', () => {
     const csv = buildBurndownCsv([
-      { date: '2026-09-01', ideal: 8, actual: 8 },
-      { date: '2026-09-02', ideal: 4, actual: null },
+      { date: '2026-09-01', ideal: 8, actual: 8, projection: 8 },
+      { date: '2026-09-02', ideal: 4, actual: null, projection: null },
     ]);
     expect(csv).toBe([
-      'Dato,Ideelle resterende timer,Faktiske resterende timer',
-      '2026-09-01,8,8',
-      '2026-09-02,4,',
+      'Dato,Ideelle resterende timer,Faktiske resterende timer,Prognose',
+      '2026-09-01,8,8,8',
+      '2026-09-02,4,,',
     ].join('\r\n'));
   });
 });
@@ -69,6 +181,19 @@ describe('board preferences', () => {
       defaultSprintDays: 21,
       copyEstimateToActual: false,
       remindMissingEstimate: true,
+    });
+  });
+
+  it('clamps team size, hours per day and efficiency', () => {
+    expect(normalizePreferences({ teamSize: 0, hoursPerDay: 99, efficiencyFactor: 0 })).toMatchObject({
+      teamSize: 1,
+      hoursPerDay: 8,
+      efficiencyFactor: 1,
+    });
+    expect(normalizePreferences({ teamSize: 3, hoursPerDay: 6, efficiencyFactor: 0.75 })).toMatchObject({
+      teamSize: 3,
+      hoursPerDay: 6,
+      efficiencyFactor: 0.75,
     });
   });
 

@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatHours, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
 import { renderChart } from './chart.js';
 
 const demoMode = new URLSearchParams(window.location.search).has('demo');
@@ -29,6 +29,7 @@ const settingsToggle = document.querySelector('#settings-toggle');
 let cards = [];
 let currentBurndown = null;
 let boardName = '';
+let preferences = normalizePreferences();
 
 function filenamePart(value) {
   return value
@@ -83,8 +84,8 @@ function renderTaskList(tracked) {
   });
 }
 
-function render(settings) {
-  const result = buildBurndown(cards, settings);
+function render(settings, preferences) {
+  const result = buildBurndown(cards, settings, localDateKey(), preferences);
   currentBurndown = { ...result, ...settings };
   document.querySelector('#start-date').value = settings.startDate;
   document.querySelector('#end-date').value = settings.endDate;
@@ -101,6 +102,13 @@ function render(settings) {
   const variance = result.variance;
   document.querySelector('#variance').textContent = `${variance > 0 ? '+' : ''}${formatHours(variance)}`;
   document.querySelector('#variance').className = variance > 0 ? 'metric-warning' : '';
+  document.querySelector('#velocity').textContent = result.velocity === null ? '–' : `${formatHours(result.velocity)} / dag`;
+  document.querySelector('#efficiency').textContent = result.measuredEfficiency === null
+    ? `${Math.round(result.plannedEfficiency * 100)}% (planlagt)`
+    : `${Math.round(result.efficiency * 100)}%`;
+  document.querySelector('#efficiency').className = result.measuredEfficiency !== null && result.efficiency < 1 ? 'metric-warning' : '';
+  document.querySelector('#prognosis').textContent = formatDate(result.projectedEndDate);
+  document.querySelector('#prognosis').className = result.projectedEndDate > settings.endDate ? 'metric-warning' : '';
   document.querySelector('#date-range').textContent = `${formatDate(settings.startDate)} til ${formatDate(settings.endDate)}`;
   document.querySelector('#tracked-label').textContent = `${result.tracked.length} kort med estimat`;
   renderChart(document.querySelector('#chart'), result.points, result.totalEstimate);
@@ -120,10 +128,10 @@ async function load() {
     ...card,
     time: normalizeTimeData(await t.get(card.id, 'shared', CARD_DATA_KEY, {})),
   })));
-  const preferences = normalizePreferences(storedPreferences);
+  preferences = normalizePreferences(storedPreferences);
   const defaults = defaultSprintDates(new Date(), preferences.defaultSprintDays);
   const settings = storedSettings?.startDate && storedSettings?.endDate ? storedSettings : defaults;
-  render(settings);
+  render(settings, preferences);
 }
 
 settingsToggle.addEventListener('click', () => {
@@ -149,7 +157,7 @@ document.querySelector('#settings-form').addEventListener('submit', async (event
   await t.set('board', 'shared', BOARD_SETTINGS_KEY, settings);
   settingsPanel.hidden = true;
   settingsToggle.setAttribute('aria-expanded', 'false');
-  render(settings);
+  render(settings, preferences);
 });
 
 load().catch((reason) => {

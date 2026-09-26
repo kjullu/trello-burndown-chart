@@ -37,6 +37,9 @@ function render(preferences) {
   document.querySelector('#show-front-badges').checked = preferences.showCardFrontBadges;
   document.querySelector('#remind-missing-estimate').checked = preferences.remindMissingEstimate;
   document.querySelector('#warn-over-estimate').checked = preferences.warnOverEstimate;
+  document.querySelector('#team-size').value = preferences.teamSize;
+  document.querySelector('#hours-per-day').value = preferences.hoursPerDay;
+  document.querySelector('#efficiency-factor').value = preferences.efficiencyFactor;
   t.sizeTo('body');
 }
 
@@ -51,6 +54,9 @@ function readForm() {
     showCardFrontBadges: document.querySelector('#show-front-badges').checked,
     remindMissingEstimate: document.querySelector('#remind-missing-estimate').checked,
     warnOverEstimate: document.querySelector('#warn-over-estimate').checked,
+    teamSize: Number(document.querySelector('#team-size').value),
+    hoursPerDay: Number(document.querySelector('#hours-per-day').value),
+    efficiencyFactor: Number(document.querySelector('#efficiency-factor').value),
   });
 }
 

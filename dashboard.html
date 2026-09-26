@@ -35,12 +35,19 @@
           <article><span>Tilbage</span><strong id="remaining-hours">0 t</strong></article>
           <article><span>Færdige kort</span><strong id="completed-count">0 / 0</strong></article>
           <article><span>Estimat mod faktisk</span><strong id="variance">0 t</strong></article>
+          <article><span>Velocity</span><strong id="velocity">–</strong></article>
+          <article><span>Effektivitet</span><strong id="efficiency">–</strong></article>
+          <article><span>Prognose</span><strong id="prognosis">–</strong></article>
         </div>
 
         <section class="chart-card">
           <div class="chart-heading">
             <div><h2>Timer tilbage</h2><p id="date-range"></p></div>
-            <div class="legend" aria-label="Signaturforklaring"><span><i class="legend-actual"></i>Faktisk</span><span><i class="legend-ideal"></i>Ideel</span></div>
+            <div class="legend" aria-label="Signaturforklaring">
+              <span><i class="legend-actual"></i>Faktisk</span>
+              <span><i class="legend-ideal"></i>Ideel</span>
+              <span><i class="legend-projection"></i>Prognose</span>
+            </div>
           </div>
           <div id="chart" class="chart" role="img" aria-label="Burndown-graf"></div>
         </section>
