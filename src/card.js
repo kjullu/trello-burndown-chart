@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, localDateKey, normalizePreferences, normalizeTimeData } from './model.js';
+import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, localDateKey, normalizePreferences, normalizeTimeData, recordEstimateChange } from './model.js';
 
 const t = window.TrelloPowerUp.iframe();
 const form = document.querySelector('#time-form');
@@ -12,6 +12,7 @@ const ignored = document.querySelector('#estimate-ignored');
 const error = document.querySelector('#form-error');
 let preferences = DEFAULT_PREFERENCES;
 let storedEstimate = null;
+let storedHistory = [];
 
 function showCompletionFields() {
   fields.hidden = !completed.checked;
@@ -32,6 +33,7 @@ async function initialize() {
   const data = normalizeTimeData(stored);
   preferences = normalizePreferences(storedPreferences);
   storedEstimate = data.estimate;
+  storedHistory = data.estimateHistory;
   ignored.checked = Boolean(data.estimateIgnored);
   estimate.value = data.estimate || (ignored.checked ? '' : preferences.defaultEstimate) || '';
   completed.checked = Boolean(data.completedAt || card.dueComplete);
@@ -57,11 +59,14 @@ document.querySelector('#cancel').addEventListener('click', () => t.closePopup()
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   error.hidden = true;
+  const savedOn = localDateKey();
+  const estimateEffectiveOn = completed.checked && storedHistory.length === 0 ? null : savedOn;
   const data = normalizeTimeData({
     estimate: estimate.value,
     actual: completed.checked ? actual.value : null,
     completedAt: completed.checked ? completedAt.value : null,
     estimateIgnored: ignored.checked,
+    estimateHistory: recordEstimateChange(storedHistory, estimateEffectiveOn, estimate.value),
   });
   if ((!data.estimate && !ignored.checked) || (completed.checked && (!data.actual || !data.completedAt))) {
     error.textContent = 'Udfyld estimatet og den faktiske tid med tal over 0.';

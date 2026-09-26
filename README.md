@@ -67,15 +67,25 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 
 1. Vælg **Burndown** i boardets topmenu.
 2. Åbn **Sprintdatoer**, og vælg sprintens start- og slutdato.
-3. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid samt alle kort med estimater.
+3. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid, velocity, effektivitet og en prognose for, hvornår arbejdet er færdigt.
 
-Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats. Når en opgave afsluttes, trækkes dens estimat fra den resterende indsats. Den faktiske registrerede tid bruges i målingen **Estimat mod faktisk**.
+Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
+
+Værdien på den blå linje er **summen af den indsats, der var tilbage ved arbejdsdagens start** — ikke en løbende nedskrivning af en fast total. Det betyder, at en opgave der tilføjes midt i sprinten først tæller fra den dag, den får et estimat, og at estimatændringer ikke ændrer fortiden. Arbejde, der afsluttes på en given dato, er derfor brændt af ved næste punkt. Den ideelle linje starter ved det backlog, der var ved sprintens start, og ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender vises ikke på tidsaksen.
+
+### Prognose, velocity og effektivitet
+
+- **Velocity** er den estimerede mængde arbejde, der er afbrændt pr. arbejdsdag i sprinten.
+- **Effektivitet** er forholdet mellem det estimerede og det faktiske tidsforbrug på de afsluttede opgaver. En faktor på 100 % betyder, at arbejdet tog lige så lang tid som estimeret. Under 100 % tager det længere tid. Faktoren genberegnes automatisk i takt med at faktisk tid registreres; indtil da bruges den planlagte faktor fra indstillingerne.
+- **Prognose** er den arbejdsdag, hvor det resterende arbejde forventes færdigt, udregnet som `resterende timer ÷ (arbejdstimer pr. arbejdsdag × antal medarbejdere × effektivitet)`. Den røde prognoselinje fortsætter efter sprintens slutdato, hvis arbejdet forventes færdigt senere. I så fald vises datoen også med advarselsfarven.
+
+Den samme formel bruges til at forudsige hele sprintens varighed fra starten: `(samlet estimat ÷ (arbejdstimer pr. arbejdsdag × medarbejdere)) ÷ effektivitet`. Det er den faktor, der kompenserer for systematiske skævvrid i estimaterne, så et hold der konsekvent overestimerer ikke altid ser ud til at være foran planen.
 
 ### Tilpas indstillingerne
 
 Åbn boardets **Power-Ups**-menu, find Sprintline, og vælg **Settings**. Indstillingerne gælder kun for det aktuelle board.
 
-Her kan du vælge farver for aktive, færdige og overskredne opgaver, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, vise en rød påmindelse på kort uden estimat, skjule badges på kortforsiden og vælge standardlængden på nye sprints. Når påmindelsen om manglende estimat er slået til, kan du fravælge den på enkelte kort via **Tid & afslutning**-dialogens afkrydsningsfelt **Ignorér manglende estimat**.
+Her kan du vælge farver for aktive, færdige og overskredne opgaver, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, vise en rød påmindelse på kort uden estimat, skjule badges på kortforsiden og vælge standardlængden på nye sprints. Under **Prognose** sætter du antal medarbejdere, arbejdstimer pr. dag og den planlagte effektivitetsfaktor. Når påmindelsen om manglende estimat er slået til, kan du fravælge den på enkelte kort via **Tid & afslutning**-dialogens afkrydsningsfelt **Ignorér manglende estimat**.
 
 ## Host projektet selv
 
@@ -149,9 +159,10 @@ npm run build
 
 Sprintline gemmer disse delte oplysninger:
 
-- Estimeret tid, faktisk tid og afslutningsdato på det enkelte kort.
+- Estimeret tid, faktisk tid, afslutningsdato og en kort historik over estimatændringer på det enkelte kort. Historikken bruges til at vise det korrekte resterende arbejde for hver dag, så fortidens grafpunkter ikke ændrer sig, når et estimat rettes.
 - Sprintens start- og slutdato på boardet.
+- Antal medarbejdere, arbejdstimer pr. dag og effektivitetsfaktor på boardet.
 
 Data gemmes via Trellos `pluginData` med synligheden `shared`. Det betyder, at medlemmer med adgang til kortet eller boardet kan læse Power-Up-dataene. Der sendes ingen tidsdata til GitHub Pages, Netlify, Vercel eller en ekstern database.
 
-Trello har en grænse på 4096 tegn pr. scope og synlighed. Sprintline gemmer kun et lille objekt på hvert kort og et lille objekt på boardet.
+Trello har en grænse på 4096 tegn pr. scope og synlighed. Sprintline gemmer kun et lille objekt på hvert kort og et lille objekt på boardet. Estimathistorikken på hvert kort holdes ned til de seneste 60 ændringer.

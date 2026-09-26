@@ -97,9 +97,8 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .settings-panel .field { min-width: 180px; }
 .helper-text { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
 .loading-state { justify-content: center; min-height: 380px; }
-.metric-strip { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 8px 8px 0 0; background: var(--surface); box-shadow: var(--shadow); }
-.metric-strip article { padding: 19px 22px; }
-.metric-strip article + article { border-left: 1px solid var(--line); }
+.metric-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 1px solid var(--line); border-radius: 8px 8px 0 0; background: var(--line); box-shadow: var(--shadow); }
+.metric-strip article { padding: 19px 22px; background: var(--surface); }
 .metric-strip span { display: block; margin-bottom: 5px; color: var(--muted); font: 500 10px 'DM Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; }
 .metric-strip strong { font-family: 'Space Grotesk', sans-serif; font-size: 24px; }
 .metric-warning { color: var(--red); }
@@ -111,11 +110,13 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .legend span { display: flex; align-items: center; gap: 7px; }
 .legend i { width: 22px; border-top: 3px solid var(--blue); }
 .legend .legend-ideal { border-top: 2px dashed #8993a4; }
+.legend .legend-projection { border-top: 2px dotted var(--red); }
 .chart { min-height: 350px; margin-top: 8px; }
 .chart svg { display: block; width: 100%; overflow: visible; }
 .grid-line { stroke: var(--grid); stroke-width: 1; }
 .axis-label { fill: var(--muted); font: 500 12px 'DM Mono', monospace; }
 .ideal-line { fill: none; stroke: #8993a4; stroke-width: 2; stroke-dasharray: 7 7; }
+.projection-line { fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 2 6; stroke-linecap: round; }
 .actual-area { fill: url('#actual-gradient'); fill: rgba(12, 102, 228, 0.08); }
 .actual-line { fill: none; stroke: var(--blue); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
 .actual-dot { fill: var(--surface); stroke: var(--blue); stroke-width: 3; }
@@ -143,7 +144,6 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
   .dashboard-header { align-items: center; }
   .dashboard-actions { align-items: stretch; flex-direction: column; }
   .metric-strip { grid-template-columns: 1fr; }
-  .metric-strip article + article { border-top: 1px solid var(--line); border-left: 0; }
   .settings-panel form { align-items: stretch; flex-direction: column; }
   .chart-card { padding: 16px 10px 10px; }
   .chart-heading { padding: 0 6px; }

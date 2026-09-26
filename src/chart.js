@@ -8,6 +8,11 @@ function svgElement(name, attrs = {}) {
   return element;
 }
 
+function linePath(points, x, y, field) {
+  const drawn = points.filter((point) => point[field] !== null);
+  return drawn.map((point, index) => `${index ? 'L' : 'M'} ${x(points.indexOf(point))} ${y(point[field])}`).join(' ');
+}
+
 export function renderChart(container, points, totalEstimate) {
   container.replaceChildren();
   const width = 1000;
@@ -15,13 +20,13 @@ export function renderChart(container, points, totalEstimate) {
   const margin = { top: 25, right: 28, bottom: 54, left: 66 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
-  const max = Math.max(totalEstimate, 1);
+  const peak = Math.max(totalEstimate, ...points.map((point) => point.actual ?? 0), 1);
   const svg = svgElement('svg', { viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' });
 
   const x = (index) => margin.left + (points.length <= 1 ? 0 : index / (points.length - 1)) * plotWidth;
-  const y = (value) => margin.top + (1 - value / max) * plotHeight;
+  const y = (value) => margin.top + (1 - value / peak) * plotHeight;
   for (let step = 0; step <= 4; step += 1) {
-    const value = max * (1 - step / 4);
+    const value = peak * (1 - step / 4);
     const lineY = margin.top + step * (plotHeight / 4);
     svg.append(svgElement('line', { x1: margin.left, x2: width - margin.right, y1: lineY, y2: lineY, class: 'grid-line' }));
     const label = svgElement('text', { x: margin.left - 14, y: lineY + 4, class: 'axis-label', 'text-anchor': 'end' });
@@ -29,11 +34,13 @@ export function renderChart(container, points, totalEstimate) {
     svg.append(label);
   }
 
-  const idealPath = points.map((point, index) => `${index ? 'L' : 'M'} ${x(index)} ${y(point.ideal)}`).join(' ');
+  const idealPath = linePath(points, x, y, 'ideal');
   const actualPoints = points.filter((point) => point.actual !== null);
-  const actualPath = actualPoints.map((point, index) => `${index ? 'L' : 'M'} ${x(points.indexOf(point))} ${y(point.actual)}`).join(' ');
-  const areaPath = actualPoints.length ? `${actualPath} L ${x(points.indexOf(actualPoints.at(-1)))} ${y(0)} L ${x(0)} ${y(0)} Z` : '';
+  const actualPath = linePath(points, x, y, 'actual');
+  const projectionPath = linePath(points, x, y, 'projection');
+  const areaPath = actualPoints.length ? `${actualPath} L ${x(points.indexOf(actualPoints.at(-1)))} ${y(0)} L ${x(points.indexOf(actualPoints[0]))} ${y(0)} Z` : '';
   svg.append(svgElement('path', { d: idealPath, class: 'ideal-line' }));
+  if (projectionPath) svg.append(svgElement('path', { d: projectionPath, class: 'projection-line' }));
   if (areaPath) svg.append(svgElement('path', { d: areaPath, class: 'actual-area' }));
   if (actualPath) svg.append(svgElement('path', { d: actualPath, class: 'actual-line' }));
   actualPoints.forEach((point) => svg.append(svgElement('circle', { cx: x(points.indexOf(point)), cy: y(point.actual), r: 5, class: 'actual-dot' })));
