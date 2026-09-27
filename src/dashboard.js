@@ -67,6 +67,28 @@ function formatDate(date) {
   return new Intl.DateTimeFormat('da-DK', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`));
 }
 
+function displayDate(date) {
+  const [year, month, day] = date.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function parseDate(value) {
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value.trim());
+  if (!match) return null;
+  const [, day, month, year] = match;
+  const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  const parsed = new Date(`${date}T12:00:00`);
+  return !Number.isNaN(parsed.getTime()) && parsed.getFullYear() === Number(year)
+    && parsed.getMonth() + 1 === Number(month) && parsed.getDate() === Number(day) ? date : null;
+}
+
+for (const field of ['start-date', 'end-date']) {
+  const input = document.getElementById(field);
+  const picker = document.getElementById(`${field}-picker`);
+  picker.addEventListener('change', () => { if (picker.value) input.value = displayDate(picker.value); });
+  input.addEventListener('change', () => { picker.value = parseDate(input.value) || ''; });
+}
+
 function renderTaskList(tracked) {
   const list = document.querySelector('#task-list');
   list.replaceChildren();
@@ -98,8 +120,10 @@ function renderTaskList(tracked) {
 function render(settings, preferences) {
   const result = buildBurndown(cards, settings, demoMode ? '2026-09-26' : localDateKey(), preferences);
   currentBurndown = { ...result, ...settings };
-  document.querySelector('#start-date').value = settings.startDate;
-  document.querySelector('#end-date').value = settings.endDate;
+  for (const [field, date] of [['start-date', settings.startDate], ['end-date', settings.endDate]]) {
+    document.getElementById(field).value = displayDate(date);
+    document.getElementById(`${field}-picker`).value = date;
+  }
   document.querySelector('#loading').hidden = true;
   if (!result.tracked.length) {
     document.querySelector('#dashboard-content').hidden = true;
@@ -155,10 +179,15 @@ document.querySelector('#export-csv').addEventListener('click', downloadCsv);
 document.querySelector('#settings-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const settings = {
-    startDate: document.querySelector('#start-date').value,
-    endDate: document.querySelector('#end-date').value,
+    startDate: parseDate(document.querySelector('#start-date').value),
+    endDate: parseDate(document.querySelector('#end-date').value),
   };
   const error = document.querySelector('#dashboard-error');
+  if (!settings.startDate || !settings.endDate) {
+    error.textContent = 'Skriv gyldige datoer som dd/mm/åååå.';
+    error.hidden = false;
+    return;
+  }
   if (settings.startDate > settings.endDate) {
     error.textContent = 'Slutdatoen skal ligge efter startdatoen.';
     error.hidden = false;

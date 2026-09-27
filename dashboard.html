@@ -22,8 +22,8 @@
 
       <section id="settings-panel" class="settings-panel" hidden>
         <form id="settings-form">
-          <label class="field"><span>Startdato</span><input id="start-date" type="date" required /></label>
-          <label class="field"><span>Slutdato</span><input id="end-date" type="date" required /></label>
+          <div class="field"><label for="start-date">Startdato</label><div class="date-field"><input id="start-date" type="text" inputmode="numeric" placeholder="dd/mm/åååå" required /><input id="start-date-picker" type="date" aria-label="Vælg startdato" tabindex="-1" /></div></div>
+          <div class="field"><label for="end-date">Slutdato</label><div class="date-field"><input id="end-date" type="text" inputmode="numeric" placeholder="dd/mm/åååå" required /><input id="end-date-picker" type="date" aria-label="Vælg slutdato" tabindex="-1" /></div></div>
           <button class="button button-primary" type="submit">Gem datoer</button>
         </form>
         <p class="helper-text">Arbejdsdage vises. Kort uden estimat tæller ikke med.</p>
