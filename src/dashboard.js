@@ -1,5 +1,6 @@
 import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
 import { renderChart } from './chart.js';
+import { createTrelloClient } from './trello-client.js';
 
 const query = new URLSearchParams(window.location.search);
 const demoMode = query.has('demo');
@@ -33,7 +34,7 @@ const demoClient = {
     : demoTimes[scope] || fallback,
   set: async () => undefined,
 };
-const t = demoMode ? demoClient : window.TrelloPowerUp.iframe();
+const t = await createTrelloClient({ demoMode, demoClient });
 const settingsPanel = document.querySelector('#settings-panel');
 const settingsToggle = document.querySelector('#settings-toggle');
 let cards = [];
