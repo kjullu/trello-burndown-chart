@@ -243,11 +243,7 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   const projectionOrigin = lastActualDay >= settings.startDate ? lastActualDay : settings.startDate;
   const projectedEndDate = projectedDays > 0 ? addWorkDays(projectionOrigin, projectedDays) : projectionOrigin;
 
-  const projectionExtension = projectedEndDate > settings.endDate
-    ? workDayRange(addDays(settings.endDate, 1), projectedEndDate)
-    : [];
-  const days = [...new Set([...sprintDays, ...projectionExtension])].sort();
-  const points = days.map((date) => {
+  const points = sprintDays.map((date) => {
     const sprintIndex = sprintDays.indexOf(date);
     return {
       date,
@@ -263,9 +259,10 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   if (projectionStart >= 0 && points.length) {
     const from = points[projectionStart].actual;
     const projectionEnd = points.findIndex((point) => point.date === projectedEndDate);
-    const span = Math.max(1, projectionEnd - projectionStart);
+    const visibleEnd = projectionEnd === -1 ? points.length - 1 : projectionEnd;
+    const span = Math.max(1, workDayRange(points[projectionStart].date, projectedEndDate).length - 1);
     points.forEach((point, index) => {
-      if (index < projectionStart || index > projectionEnd) return;
+      if (index < projectionStart || index > visibleEnd) return;
       point.projection = Math.max(0, from * (1 - (index - projectionStart) / span));
     });
   }

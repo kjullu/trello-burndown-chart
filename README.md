@@ -77,7 +77,7 @@ Værdien på den blå linje er **summen af den indsats, der var tilbage ved arbe
 
 - **Velocity** er den estimerede mængde arbejde, der er afbrændt pr. arbejdsdag i sprinten.
 - **Effektivitet** er forholdet mellem det estimerede og det faktiske tidsforbrug på de afsluttede opgaver. En faktor på 100 % betyder, at arbejdet tog lige så lang tid som estimeret. Under 100 % tager det længere tid. Faktoren genberegnes automatisk i takt med at faktisk tid registreres; indtil da bruges den planlagte faktor fra indstillingerne.
-- **Prognose** er den arbejdsdag, hvor det resterende arbejde forventes færdigt, udregnet som `resterende timer ÷ (arbejdstimer pr. arbejdsdag × antal medarbejdere × effektivitet)`. Den røde prognoselinje fortsætter efter sprintens slutdato, hvis arbejdet forventes færdigt senere. I så fald vises datoen også med advarselsfarven.
+- **Prognose** er den arbejdsdag, hvor det resterende arbejde forventes færdigt, udregnet som `resterende timer ÷ (arbejdstimer pr. arbejdsdag × antal medarbejdere × effektivitet)`. Grafens akse følger sprintdatoerne. Hvis prognosen ligger efter sprintens slutdato, stopper den røde linje over nul ved sprintens slutning, og prognosedatoen vises med advarselsfarven.
 
 Den samme formel bruges til at forudsige hele sprintens varighed fra starten: `(samlet estimat ÷ (arbejdstimer pr. arbejdsdag × medarbejdere)) ÷ effektivitet`. Det er den faktor, der kompenserer for systematiske skævvrid i estimaterne, så et hold der konsekvent overestimerer ikke altid ser ud til at være foran planen.
 

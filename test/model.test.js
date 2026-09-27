@@ -212,11 +212,11 @@ describe('buildBurndown', () => {
     expect(result.projectedEndDate).toBe('2026-09-18');
   });
 
-  it('extends the chart through a prognosis after the sprint end', () => {
+  it('keeps the chart within the sprint when the prognosis is later', () => {
     const cards = [{ time: { estimate: 40, actual: null, completedAt: null } }];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-07' }, '2026-09-04', { hoursPerDay: 8, teamSize: 1, efficiencyFactor: 1 });
     expect(result.projectedEndDate).toBe('2026-09-11');
-    expect(result.points.at(-1)).toMatchObject({ date: '2026-09-11', ideal: null, actual: null, projection: 0 });
+    expect(result.points.at(-1)).toMatchObject({ date: '2026-09-07', ideal: 0, actual: null, projection: 32 });
     expect(result.points.map((point) => point.date)).not.toContain('2026-09-06');
   });
 
