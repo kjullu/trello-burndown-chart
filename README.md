@@ -71,7 +71,7 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 
 Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
 
-Værdien på den blå linje er **summen af den indsats, der var tilbage ved arbejdsdagens start** — ikke en løbende nedskrivning af en fast total. Det betyder, at en opgave der tilføjes midt i sprinten først tæller fra den dag, den får et estimat, og at estimatændringer ikke ændrer fortiden. Arbejde, der afsluttes på en given dato, er derfor brændt af ved næste punkt. Den ideelle linje starter ved det backlog, der var ved sprintens start, og ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender vises ikke på tidsaksen.
+Værdien på den blå linje er **summen af den indsats, der var tilbage ved arbejdsdagens start** — ikke en løbende nedskrivning af en fast total. Et korts første estimat regnes som en del af sprintens oprindelige backlog, også hvis estimatet først indtastes efter sprintstart. Derfor starter den faktiske og ideelle linje samme sted. Senere estimatændringer gælder fra ændringsdatoen og ændrer ikke fortiden. Arbejde, der afsluttes på en given dato, er brændt af ved næste punkt. Den ideelle linje ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender bruger ingen kapacitet og vises ikke på tidsaksen.
 
 ### Prognose, velocity og effektivitet
 
@@ -143,8 +143,10 @@ npm run dev
 Demo-dashboardet kan åbnes uden Trello på:
 
 ```text
-http://localhost:5173/dashboard.html?demo=1
+http://localhost:5173/dashboard.html?demo
 ```
+
+Regressionseksemplet, hvor det første estimat indtastes midt i sprinten, kan ses på `http://localhost:5173/dashboard.html?demo=wikipedia-baseline`. Demoen viser, at den faktiske og ideelle linje starter sammen. Demoerne bruger faste datoer og data, så resultatet er det samme uanset hvornår de åbnes.
 
 For at teste selve Power-Up-integrationen skal den lokale server eksponeres via en HTTPS-tunnel. Brug tunnelens rodadresse som Iframe Connector URL i en test-Power-Up.
 

@@ -1,17 +1,26 @@
 import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
 import { renderChart } from './chart.js';
+import { createTrelloClient } from './trello-client.js';
 
-const demoMode = new URLSearchParams(window.location.search).has('demo');
-const demoTimes = {
+const query = new URLSearchParams(window.location.search);
+const demoMode = query.has('demo');
+const demoScenario = query.get('demo');
+const defaultDemoTimes = {
   c1: { estimate: 8, actual: 7.5, completedAt: '2026-09-18' },
   c2: { estimate: 5, actual: 6, completedAt: '2026-09-20' },
   c3: { estimate: 13, actual: null, completedAt: null },
   c4: { estimate: 3, actual: 2.5, completedAt: '2026-09-22' },
   c5: { estimate: 8, actual: null, completedAt: null },
 };
+const wikipediaBaselineDemo = demoScenario === 'wikipedia-baseline';
+const demoTimes = wikipediaBaselineDemo
+  ? { c1: { estimate: 2, actual: null, completedAt: null, estimateHistory: [{ date: null, estimate: 2 }] } }
+  : defaultDemoTimes;
 const demoClient = {
-  board: async () => ({ name: 'Produktlancering' }),
-  cards: async () => [
+  board: async () => ({ name: wikipediaBaselineDemo ? 'Wikipedia-baseline test' : 'Produktlancering' }),
+  cards: async () => wikipediaBaselineDemo ? [
+    { id: 'c1', name: 'test', url: '#', dueComplete: false },
+  ] : [
     { id: 'c1', name: 'Interview tre pilotkunder', url: '#', dueComplete: true },
     { id: 'c2', name: 'Byg onboarding-flow', url: '#', dueComplete: true },
     { id: 'c3', name: 'Klargør betalingsside', url: '#', dueComplete: false },
@@ -19,11 +28,13 @@ const demoClient = {
     { id: 'c5', name: 'Test mobilvisning', url: '#', dueComplete: true },
   ],
   get: async (scope, visibility, key, fallback) => key === BOARD_SETTINGS_KEY
-    ? { startDate: '2026-09-16', endDate: '2026-09-29' }
+    ? wikipediaBaselineDemo
+      ? { startDate: '2026-09-24', endDate: '2026-09-29' }
+      : { startDate: '2026-09-16', endDate: '2026-09-29' }
     : demoTimes[scope] || fallback,
   set: async () => undefined,
 };
-const t = demoMode ? demoClient : window.TrelloPowerUp.iframe();
+const t = await createTrelloClient({ demoMode, demoClient });
 const settingsPanel = document.querySelector('#settings-panel');
 const settingsToggle = document.querySelector('#settings-toggle');
 let cards = [];
@@ -85,7 +96,7 @@ function renderTaskList(tracked) {
 }
 
 function render(settings, preferences) {
-  const result = buildBurndown(cards, settings, localDateKey(), preferences);
+  const result = buildBurndown(cards, settings, demoMode ? '2026-09-26' : localDateKey(), preferences);
   currentBurndown = { ...result, ...settings };
   document.querySelector('#start-date').value = settings.startDate;
   document.querySelector('#end-date').value = settings.endDate;
