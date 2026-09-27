@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatDanishDate, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate } from './model.js';
 import { renderChart } from './chart.js';
 import { createTrelloClient } from './trello-client.js';
 
@@ -67,26 +67,11 @@ function formatDate(date) {
   return new Intl.DateTimeFormat('da-DK', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`));
 }
 
-function displayDate(date) {
-  const [year, month, day] = date.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-function parseDate(value) {
-  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value.trim());
-  if (!match) return null;
-  const [, day, month, year] = match;
-  const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  const parsed = new Date(`${date}T12:00:00`);
-  return !Number.isNaN(parsed.getTime()) && parsed.getFullYear() === Number(year)
-    && parsed.getMonth() + 1 === Number(month) && parsed.getDate() === Number(day) ? date : null;
-}
-
 for (const field of ['start-date', 'end-date']) {
   const input = document.getElementById(field);
   const picker = document.getElementById(`${field}-picker`);
-  picker.addEventListener('change', () => { if (picker.value) input.value = displayDate(picker.value); });
-  input.addEventListener('change', () => { picker.value = parseDate(input.value) || ''; });
+  picker.addEventListener('change', () => { if (picker.value) input.value = formatDanishDate(picker.value); });
+  input.addEventListener('change', () => { picker.value = parseDanishDate(input.value) || ''; });
 }
 
 function renderTaskList(tracked) {
@@ -121,7 +106,7 @@ function render(settings, preferences) {
   const result = buildBurndown(cards, settings, demoMode ? '2026-09-26' : localDateKey(), preferences);
   currentBurndown = { ...result, ...settings };
   for (const [field, date] of [['start-date', settings.startDate], ['end-date', settings.endDate]]) {
-    document.getElementById(field).value = displayDate(date);
+    document.getElementById(field).value = formatDanishDate(date);
     document.getElementById(`${field}-picker`).value = date;
   }
   document.querySelector('#loading').hidden = true;
@@ -165,8 +150,15 @@ async function load() {
   })));
   preferences = normalizePreferences(storedPreferences);
   const defaults = defaultSprintDates(new Date(), preferences.defaultSprintDays);
-  const settings = storedSettings?.startDate && storedSettings?.endDate ? storedSettings : defaults;
-  render(settings, preferences);
+  const settings = normalizeSprintSettings(storedSettings, defaults);
+  try {
+    render(settings, preferences);
+  } catch (reason) {
+    const error = document.querySelector('#dashboard-error');
+    error.textContent = 'Dashboardet kunne ikke vises. Kontrollér sprintdatoerne og prøv igen.';
+    error.hidden = false;
+    throw reason;
+  }
 }
 
 settingsToggle.addEventListener('click', () => {
@@ -179,8 +171,8 @@ document.querySelector('#export-csv').addEventListener('click', downloadCsv);
 document.querySelector('#settings-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const settings = {
-    startDate: parseDate(document.querySelector('#start-date').value),
-    endDate: parseDate(document.querySelector('#end-date').value),
+    startDate: parseDanishDate(document.querySelector('#start-date').value),
+    endDate: parseDanishDate(document.querySelector('#end-date').value),
   };
   const error = document.querySelector('#dashboard-error');
   if (!settings.startDate || !settings.endDate) {
@@ -194,16 +186,22 @@ document.querySelector('#settings-form').addEventListener('submit', async (event
     return;
   }
   error.hidden = true;
-  await t.set('board', 'shared', BOARD_SETTINGS_KEY, settings);
-  settingsPanel.hidden = true;
-  settingsToggle.setAttribute('aria-expanded', 'false');
-  render(settings, preferences);
+  try {
+    await t.set('board', 'shared', BOARD_SETTINGS_KEY, settings);
+    settingsPanel.hidden = true;
+    settingsToggle.setAttribute('aria-expanded', 'false');
+    render(settings, preferences);
+  } catch (reason) {
+    error.textContent = 'Sprintdatoerne kunne ikke gemmes. Prøv igen.';
+    error.hidden = false;
+    console.error(reason);
+  }
 });
 
 load().catch((reason) => {
   document.querySelector('#loading').hidden = true;
   const error = document.querySelector('#dashboard-error');
-  error.textContent = 'Boardets data kunne ikke hentes. Genåbn dashboardet og prøv igen.';
+  if (error.hidden) error.textContent = 'Boardets data kunne ikke hentes. Genåbn dashboardet og prøv igen.';
   error.hidden = false;
   console.error(reason);
 });

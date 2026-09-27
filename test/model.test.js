@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, needsActualTime, normalizePreferences, normalizeTimeData, recordEstimateChange, workDayRange } from '../src/model.js';
+import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, formatDanishDate, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('removes invalid and incomplete completion values', () => {
@@ -57,6 +57,28 @@ describe('estimate history', () => {
 });
 
 describe('date helpers', () => {
+  it('round-trips Danish date input through the canonical stored format', () => {
+    expect(parseDanishDate('7/9/2026')).toBe('2026-09-07');
+    expect(formatDanishDate('2026-09-07')).toBe('07/09/2026');
+  });
+
+  it('rejects impossible calendar dates', () => {
+    expect(parseDanishDate('31/02/2026')).toBeNull();
+    expect(validDate('2026-02-31')).toBe(false);
+  });
+
+  it('normalizes stored ISO and legacy Danish sprint dates', () => {
+    const fallback = { startDate: '2026-09-01', endDate: '2026-09-14' };
+    expect(normalizeSprintSettings({ startDate: '2026-10-01', endDate: '2026-10-12' }, fallback)).toEqual({ startDate: '2026-10-01', endDate: '2026-10-12' });
+    expect(normalizeSprintSettings({ startDate: '1/10/2026', endDate: '12/10/2026' }, fallback)).toEqual({ startDate: '2026-10-01', endDate: '2026-10-12' });
+  });
+
+  it('falls back when stored sprint dates are malformed or reversed', () => {
+    const fallback = { startDate: '2026-09-01', endDate: '2026-09-14' };
+    expect(normalizeSprintSettings({ startDate: 'nope', endDate: '12/10/2026' }, fallback)).toEqual(fallback);
+    expect(normalizeSprintSettings({ startDate: '13/10/2026', endDate: '12/10/2026' }, fallback)).toEqual(fallback);
+  });
+
   it('includes both sprint boundaries', () => {
     expect(dateRange('2026-09-01', '2026-09-03')).toEqual(['2026-09-01', '2026-09-02', '2026-09-03']);
   });

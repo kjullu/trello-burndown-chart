@@ -117,7 +117,37 @@ function boundedNumber(value, min, max) {
 }
 
 export function validDate(value) {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) && !Number.isNaN(new Date(`${value.slice(0, 10)}T12:00:00`).getTime());
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value)) return false;
+  const dateKey = value.slice(0, 10);
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const parsed = new Date(`${dateKey}T12:00:00`);
+  return !Number.isNaN(parsed.getTime())
+    && parsed.getFullYear() === year
+    && parsed.getMonth() + 1 === month
+    && parsed.getDate() === day;
+}
+
+export function parseDanishDate(value) {
+  if (typeof value !== 'string') return null;
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value.trim());
+  if (!match) return null;
+  const [, day, month, year] = match;
+  const dateKey = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  return validDate(dateKey) ? dateKey : null;
+}
+
+export function formatDanishDate(value) {
+  if (!validDate(value)) return '';
+  const [year, month, day] = value.slice(0, 10).split('-');
+  return `${day}/${month}/${year}`;
+}
+
+export function normalizeSprintSettings(value, fallback) {
+  const normalizeDate = (date) => validDate(date) ? date.slice(0, 10) : parseDanishDate(date);
+  const startDate = normalizeDate(value?.startDate);
+  const endDate = normalizeDate(value?.endDate);
+  if (startDate && endDate && startDate <= endDate) return { startDate, endDate };
+  return { startDate: fallback.startDate, endDate: fallback.endDate };
 }
 
 export function localDateKey(date = new Date()) {
