@@ -20,8 +20,8 @@ describe('time data', () => {
 
 describe('estimate history', () => {
   it('reads the estimate that was in force on a given day', () => {
-    const time = normalizeTimeData({ estimate: 8, estimateHistory: [{ date: '2026-09-10', estimate: 5 }, { date: '2026-09-15', estimate: 8 }] });
-    expect(estimateAsOf(time, '2026-09-01')).toBe(0);
+    const time = normalizeTimeData({ estimate: 8, estimateHistory: [{ date: null, estimate: 5 }, { date: '2026-09-15', estimate: 8 }] });
+    expect(estimateAsOf(time, '2026-09-01')).toBe(5);
     expect(estimateAsOf(time, '2026-09-10')).toBe(5);
     expect(estimateAsOf(time, '2026-09-14')).toBe(5);
     expect(estimateAsOf(time, '2026-09-15')).toBe(8);
@@ -29,16 +29,19 @@ describe('estimate history', () => {
   });
 
   it('appends a point when the estimate changes and skips no-op saves', () => {
-    expect(recordEstimateChange([], '2026-09-10', 5)).toEqual([{ date: '2026-09-10', estimate: 5 }]);
-    expect(recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-12', 5)).toEqual([{ date: '2026-09-10', estimate: 5 }]);
-    expect(recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-12', 9)).toEqual([
-      { date: '2026-09-10', estimate: 5 },
+    expect(recordEstimateChange([], '2026-09-10', 5)).toEqual([{ date: null, estimate: 5 }]);
+    expect(recordEstimateChange([{ date: null, estimate: 5 }], '2026-09-12', 5)).toEqual([{ date: null, estimate: 5 }]);
+    expect(recordEstimateChange([{ date: null, estimate: 5 }], '2026-09-12', 9)).toEqual([
+      { date: null, estimate: 5 },
       { date: '2026-09-12', estimate: 9 },
     ]);
   });
 
   it('rewrites a same-day change instead of stacking points', () => {
-    expect(recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-10', 7)).toEqual([{ date: '2026-09-10', estimate: 7 }]);
+    expect(recordEstimateChange([{ date: null, estimate: 5 }, { date: '2026-09-10', estimate: 6 }], '2026-09-10', 7)).toEqual([
+      { date: null, estimate: 5 },
+      { date: '2026-09-10', estimate: 7 },
+    ]);
   });
 
   it('can record a backfilled estimate as existing before the sprint', () => {
@@ -46,8 +49,8 @@ describe('estimate history', () => {
   });
 
   it('drops an estimate from the day it is removed', () => {
-    const history = recordEstimateChange([{ date: '2026-09-10', estimate: 5 }], '2026-09-14', null);
-    expect(history).toEqual([{ date: '2026-09-10', estimate: 5 }, { date: '2026-09-14', estimate: null }]);
+    const history = recordEstimateChange([{ date: null, estimate: 5 }], '2026-09-14', null);
+    expect(history).toEqual([{ date: null, estimate: 5 }, { date: '2026-09-14', estimate: null }]);
     expect(estimateAsOf(normalizeTimeData({ estimateHistory: history }), '2026-09-13')).toBe(5);
     expect(estimateAsOf(normalizeTimeData({ estimateHistory: history }), '2026-09-14')).toBe(0);
   });
@@ -100,8 +103,8 @@ describe('buildBurndown', () => {
 
   it('shows only the work that existed on each day instead of rewriting the past', () => {
     const cards = [
-      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-01', estimate: 10 }] } },
-      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-03', estimate: 10 }] } },
+      { time: { estimate: 10, estimateHistory: [{ date: null, estimate: 10 }] } },
+      { time: { estimate: 10, estimateHistory: [{ date: null, estimate: null }, { date: '2026-09-03', estimate: 10 }] } },
     ];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
     expect(result.points.filter((point) => point.date <= '2026-09-04').map((point) => point.actual)).toEqual([10, 10, 20, 20]);
@@ -110,8 +113,8 @@ describe('buildBurndown', () => {
 
   it('anchors the ideal line at the sprint-start backlog', () => {
     const cards = [
-      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-01', estimate: 10 }] } },
-      { time: { estimate: 10, estimateHistory: [{ date: '2026-09-03', estimate: 10 }] } },
+      { time: { estimate: 10, estimateHistory: [{ date: null, estimate: 10 }] } },
+      { time: { estimate: 10, estimateHistory: [{ date: null, estimate: null }, { date: '2026-09-03', estimate: 10 }] } },
     ];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
     const ideal = result.points.map((point) => point.ideal);
@@ -189,6 +192,18 @@ describe('buildBurndown', () => {
     expect(result.projectedEndDate).toBe('2026-09-11');
     expect(result.points.at(-1)).toMatchObject({ date: '2026-09-11', ideal: null, actual: null, projection: 0 });
     expect(result.points.map((point) => point.date)).not.toContain('2026-09-06');
+  });
+
+  it('migrates a dated first estimate so the ideal and actual lines start together', () => {
+    const cards = [{ time: { estimate: 2, estimateHistory: [{ date: '2026-09-26', estimate: 2 }] } }];
+    const result = buildBurndown(cards, { startDate: '2026-09-24', endDate: '2026-09-29' }, '2026-09-26', { hoursPerDay: 8, teamSize: 1, efficiencyFactor: 1 });
+    expect(result.baseline).toBe(2);
+    expect(result.remaining).toBe(2);
+    expect(result.projectedEndDate).toBe('2026-09-28');
+    expect(result.points[0]).toMatchObject({ ideal: 2, actual: 2 });
+    expect(result.points.map((point) => point.date)).not.toContain('2026-09-26');
+    expect(result.points.find((point) => point.date === '2026-09-25').projection).toBe(2);
+    expect(result.points.find((point) => point.date === '2026-09-28').projection).toBe(0);
   });
 });
 

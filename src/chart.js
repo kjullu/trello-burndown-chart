@@ -20,7 +20,7 @@ export function renderChart(container, points, totalEstimate) {
   const margin = { top: 25, right: 28, bottom: 54, left: 66 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
-  const peak = Math.max(totalEstimate, ...points.map((point) => point.actual ?? 0), 1);
+  const peak = Math.max(totalEstimate, ...points.flatMap((point) => [point.ideal ?? 0, point.actual ?? 0, point.projection ?? 0]), 1);
   const svg = svgElement('svg', { viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' });
 
   const x = (index) => margin.left + (points.length <= 1 ? 0 : index / (points.length - 1)) * plotWidth;
@@ -39,9 +39,9 @@ export function renderChart(container, points, totalEstimate) {
   const actualPath = linePath(points, x, y, 'actual');
   const projectionPath = linePath(points, x, y, 'projection');
   const areaPath = actualPoints.length ? `${actualPath} L ${x(points.indexOf(actualPoints.at(-1)))} ${y(0)} L ${x(points.indexOf(actualPoints[0]))} ${y(0)} Z` : '';
+  if (areaPath) svg.append(svgElement('path', { d: areaPath, class: 'actual-area' }));
   svg.append(svgElement('path', { d: idealPath, class: 'ideal-line' }));
   if (projectionPath) svg.append(svgElement('path', { d: projectionPath, class: 'projection-line' }));
-  if (areaPath) svg.append(svgElement('path', { d: areaPath, class: 'actual-area' }));
   if (actualPath) svg.append(svgElement('path', { d: actualPath, class: 'actual-line' }));
   actualPoints.forEach((point) => svg.append(svgElement('circle', { cx: x(points.indexOf(point)), cy: y(point.actual), r: 5, class: 'actual-dot' })));
 

@@ -72,6 +72,7 @@ function normalizeEstimateHistory(value) {
     if (b.date === null) return 1;
     return a.date < b.date ? -1 : 1;
   });
+  if (entries[0]?.estimate !== null) entries[0].date = null;
   const collapsed = [];
   entries.forEach((entry) => {
     const last = collapsed.at(-1);
@@ -84,6 +85,7 @@ function normalizeEstimateHistory(value) {
 export function recordEstimateChange(history, dateKey, nextEstimate) {
   const entries = (Array.isArray(history) ? history : []).map((entry) => ({ date: entry.date, estimate: entry.estimate ?? null }));
   const estimate = positiveNumber(nextEstimate);
+  if (entries.length === 0) return estimate === null ? [] : [{ date: null, estimate }];
   const last = entries.at(-1);
   if (last && last.date === dateKey) {
     entries[entries.length - 1] = { date: dateKey, estimate };
@@ -214,15 +216,18 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   const projectionExtension = projectedEndDate > settings.endDate
     ? workDayRange(addDays(settings.endDate, 1), projectedEndDate)
     : [];
-  const days = [...sprintDays, ...projectionExtension];
-  const points = days.map((date, index) => ({
-    date,
-    ideal: index >= sprintDays.length
-      ? null
-      : sprintDays.length <= 1 ? 0 : baseline * (1 - index / (sprintDays.length - 1)),
-    actual: date <= lastActualDay && date <= settings.endDate ? Math.max(0, remainingOn(date)) : null,
-    projection: null,
-  }));
+  const days = [...new Set([...sprintDays, ...projectionExtension])].sort();
+  const points = days.map((date) => {
+    const sprintIndex = sprintDays.indexOf(date);
+    return {
+      date,
+      ideal: sprintIndex === -1
+        ? null
+        : sprintDays.length <= 1 ? 0 : baseline * (1 - sprintIndex / (sprintDays.length - 1)),
+      actual: date <= lastActualDay && date <= settings.endDate ? Math.max(0, remainingOn(date)) : null,
+      projection: null,
+    };
+  });
 
   const projectionStart = points.reduce((last, point, index) => (point.actual === null ? last : index), -1);
   if (projectionStart >= 0 && points.length) {

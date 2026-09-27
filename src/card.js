@@ -60,13 +60,12 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   error.hidden = true;
   const savedOn = localDateKey();
-  const estimateEffectiveOn = completed.checked && storedHistory.length === 0 ? null : savedOn;
   const data = normalizeTimeData({
     estimate: estimate.value,
     actual: completed.checked ? actual.value : null,
     completedAt: completed.checked ? completedAt.value : null,
     estimateIgnored: ignored.checked,
-    estimateHistory: recordEstimateChange(storedHistory, estimateEffectiveOn, estimate.value),
+    estimateHistory: recordEstimateChange(storedHistory, savedOn, estimate.value),
   });
   if ((!data.estimate && !ignored.checked) || (completed.checked && (!data.actual || !data.completedAt))) {
     error.textContent = 'Udfyld estimatet og den faktiske tid med tal over 0.';
