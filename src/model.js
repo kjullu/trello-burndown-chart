@@ -72,7 +72,7 @@ function normalizeEstimateHistory(value) {
     if (b.date === null) return 1;
     return a.date < b.date ? -1 : 1;
   });
-  if (entries[0]?.estimate !== null) entries[0].date = null;
+  if (entries.length && entries[0].estimate !== null) entries[0].date = null;
   const collapsed = [];
   entries.forEach((entry) => {
     const last = collapsed.at(-1);

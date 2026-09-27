@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, formatDanishDate, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
+  it('keeps an explicitly empty estimate history empty', () => {
+    expect(normalizeTimeData({ estimateHistory: [] }).estimateHistory).toEqual([]);
+  });
+
   it('removes invalid and incomplete completion values', () => {
     expect(normalizeTimeData({ estimate: '4', actual: '-2', completedAt: 'nope' })).toEqual({
       estimate: 4,

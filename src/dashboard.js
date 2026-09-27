@@ -188,11 +188,18 @@ document.querySelector('#settings-form').addEventListener('submit', async (event
   error.hidden = true;
   try {
     await t.set('board', 'shared', BOARD_SETTINGS_KEY, settings);
-    settingsPanel.hidden = true;
-    settingsToggle.setAttribute('aria-expanded', 'false');
-    render(settings, preferences);
   } catch (reason) {
     error.textContent = 'Sprintdatoerne kunne ikke gemmes. Prøv igen.';
+    error.hidden = false;
+    console.error(reason);
+    return;
+  }
+  settingsPanel.hidden = true;
+  settingsToggle.setAttribute('aria-expanded', 'false');
+  try {
+    render(settings, preferences);
+  } catch (reason) {
+    error.textContent = 'Datoerne blev gemt, men dashboardet kunne ikke vises. Genåbn dashboardet og prøv igen.';
     error.hidden = false;
     console.error(reason);
   }
