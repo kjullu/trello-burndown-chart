@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, formatDanishDate, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
+import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('keeps an explicitly empty estimate history empty', () => {
@@ -264,6 +264,14 @@ describe('buildBurndownCsv', () => {
     expect(buildBurndownCsv([
       { date: '2026-10-01', ideal: 15.555555555555555, actual: 14.5, projection: 7.249999999999999 },
     ])).toContain('2026-10-01,15.56,14.5,7.25');
+  });
+});
+
+describe('hour formatting', () => {
+  it('shows up to two decimal places everywhere hours are formatted', () => {
+    expect(formatHours(2)).toBe('2 t');
+    expect(formatHours(2.75)).toBe('2,75 t');
+    expect(formatHours(2.746)).toBe('2,75 t');
   });
 });
 

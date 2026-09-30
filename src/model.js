@@ -308,7 +308,7 @@ export function buildBurndownCsv(points) {
 }
 
 function csvNumber(value) {
-  return value === null || value === undefined ? '' : Number(value.toFixed(2));
+  return value === null || value === undefined ? '' : roundToTwoDecimals(value);
 }
 
 function csvCell(value) {
@@ -317,8 +317,11 @@ function csvCell(value) {
 }
 
 export function formatHours(value) {
-  const rounded = Math.round(value * 10) / 10;
-  return `${new Intl.NumberFormat('da-DK', { maximumFractionDigits: 1 }).format(rounded)} t`;
+  return `${new Intl.NumberFormat('da-DK', { maximumFractionDigits: 2 }).format(roundToTwoDecimals(value))} t`;
+}
+
+function roundToTwoDecimals(value) {
+  return Number(value.toFixed(2));
 }
 
 export function needsActualTime(card) {
