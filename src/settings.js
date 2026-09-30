@@ -3,6 +3,7 @@ import { BOARD_PREFERENCES_KEY, DEFAULT_PREFERENCES, normalizePreferences } from
 const t = window.TrelloPowerUp.iframe();
 const form = document.querySelector('#preferences-form');
 const error = document.querySelector('#settings-error');
+let currentPreferences = DEFAULT_PREFERENCES;
 const colorOptions = [
   ['blue', 'Blå'],
   ['green', 'Grøn'],
@@ -28,6 +29,7 @@ function populateColorSelect(select) {
 ['active-color', 'completed-color', 'warning-color'].forEach((id) => populateColorSelect(document.querySelector(`#${id}`)));
 
 function render(preferences) {
+  currentPreferences = preferences;
   document.querySelector('#active-color').value = preferences.activeColor;
   document.querySelector('#completed-color').value = preferences.completedColor;
   document.querySelector('#warning-color').value = preferences.warningColor;
@@ -36,7 +38,6 @@ function render(preferences) {
   document.querySelector('#copy-estimate').checked = preferences.copyEstimateToActual;
   document.querySelector('#show-front-badges').checked = preferences.showCardFrontBadges;
   document.querySelector('#remind-missing-estimate').checked = preferences.remindMissingEstimate;
-  document.querySelector('#warn-over-estimate').checked = preferences.warnOverEstimate;
   document.querySelector('#team-size').value = preferences.teamSize;
   document.querySelector('#hours-per-day').value = preferences.hoursPerDay;
   document.querySelector('#efficiency-factor').value = preferences.efficiencyFactor;
@@ -53,7 +54,7 @@ function readForm() {
     copyEstimateToActual: document.querySelector('#copy-estimate').checked,
     showCardFrontBadges: document.querySelector('#show-front-badges').checked,
     remindMissingEstimate: document.querySelector('#remind-missing-estimate').checked,
-    warnOverEstimate: document.querySelector('#warn-over-estimate').checked,
+    warnOverEstimate: currentPreferences.warnOverEstimate,
     teamSize: Number(document.querySelector('#team-size').value),
     hoursPerDay: Number(document.querySelector('#hours-per-day').value),
     efficiencyFactor: Number(document.querySelector('#efficiency-factor').value),

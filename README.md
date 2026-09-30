@@ -71,7 +71,7 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 
 Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
 
-Værdien på den blå linje er **summen af den indsats, der var tilbage ved arbejdsdagens start** — ikke en løbende nedskrivning af en fast total. Et korts første estimat regnes som en del af sprintens oprindelige backlog, også hvis estimatet først indtastes efter sprintstart. Derfor starter den faktiske og ideelle linje samme sted. Senere estimatændringer gælder fra ændringsdatoen og ændrer ikke fortiden. Arbejde, der afsluttes på en given dato, er brændt af ved næste punkt. Den ideelle linje ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender bruger ingen kapacitet og vises ikke på tidsaksen.
+Værdien på den blå linje er **summen af den indsats, der er tilbage efter dagens registreringer** — ikke en løbende nedskrivning af en fast total. Et korts første estimat regnes som en del af sprintens oprindelige backlog, også hvis estimatet først indtastes efter sprintstart. Senere estimatændringer gælder fra ændringsdatoen og ændrer ikke fortiden. Arbejde, der afsluttes på en given dato, er brændt af på dagens punkt, mens den ideelle linje stadig starter ved sprintens oprindelige backlog. Den ideelle linje ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender bruger ingen kapacitet og vises ikke på tidsaksen.
 
 ### Prognose, velocity og effektivitet
 
@@ -85,7 +85,7 @@ Den samme formel bruges til at forudsige hele sprintens varighed fra starten: `(
 
 Åbn boardets **Power-Ups**-menu, find Sprintline, og vælg **Settings**. Indstillingerne gælder kun for det aktuelle board.
 
-Her kan du vælge farver for aktive, færdige og overskredne opgaver, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, vise en rød påmindelse på kort uden estimat, skjule badges på kortforsiden og vælge standardlængden på nye sprints. Under **Prognose** sætter du antal medarbejdere, arbejdstimer pr. dag og den planlagte effektivitetsfaktor. Når påmindelsen om manglende estimat er slået til, kan du fravælge den på enkelte kort via **Tid & afslutning**-dialogens afkrydsningsfelt **Ignorér manglende estimat**.
+Her kan du vælge farver for aktive og færdige opgaver samt kort, hvor handling kræves, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, vise en påmindelse på kort uden estimat, skjule badges på kortforsiden og vælge standardlængden på nye sprints. Advarselsfarven på kort bruges kun, når en bruger skal handle, for eksempel når et estimat eller faktisk tidsforbrug mangler. Under **Prognose** sætter du antal medarbejdere, arbejdstimer pr. dag og den planlagte effektivitetsfaktor. Når påmindelsen om manglende estimat er slået til, kan du fravælge den på enkelte kort via **Tid & afslutning**-dialogens afkrydsningsfelt **Ignorér manglende estimat**.
 
 ## Host projektet selv
 

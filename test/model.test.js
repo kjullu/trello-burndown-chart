@@ -107,7 +107,7 @@ describe('buildBurndown', () => {
       { time: { estimate: null, actual: null, completedAt: null } },
     ];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-03');
-    expect(result.points.filter((point) => point.date <= '2026-09-03').map((point) => point.actual)).toEqual([8, 8, 3]);
+    expect(result.points.filter((point) => point.date <= '2026-09-03').map((point) => point.actual)).toEqual([8, 3, 3]);
     expect(result.remaining).toBe(3);
     expect(result.variance).toBe(2);
     expect(result.completedCount).toBe(1);
@@ -166,8 +166,22 @@ describe('buildBurndown', () => {
     const cards = [{ time: { estimate: 8, actual: 8, completedAt: '2026-09-01' } }];
     const result = buildBurndown(cards, { startDate: '2026-09-01', endDate: '2026-09-03' }, '2026-09-02');
     expect(result.baseline).toBe(8);
-    expect(result.points.map((point) => point.actual)).toEqual([8, 0, null]);
+    expect(result.points.map((point) => point.actual)).toEqual([0, 0, null]);
     expect(result.variance).toBe(0);
+  });
+
+  it('keeps the starting backlog but removes same-day completions from the current remainder', () => {
+    const openCards = [0.5, 3, 0.5, 2, 3, 0.5, 2, 3].map((estimate) => ({ time: { estimate } }));
+    const cards = [
+      ...openCards,
+      { time: { estimate: 2, actual: 2, completedAt: '2026-09-30' } },
+      { time: { estimate: 1, actual: 2, completedAt: '2026-09-30' } },
+    ];
+    const result = buildBurndown(cards, { startDate: '2026-09-30', endDate: '2026-10-13' }, '2026-09-30', { hoursPerDay: 8, teamSize: 2, efficiencyFactor: 1 });
+
+    expect(result.baseline).toBe(17.5);
+    expect(result.remaining).toBe(14.5);
+    expect(result.points[0]).toMatchObject({ ideal: 17.5, actual: 14.5, projection: 14.5 });
   });
 
   it('clamps historical headline values to the sprint end', () => {
@@ -245,6 +259,12 @@ describe('buildBurndownCsv', () => {
       '2026-09-02,4,,',
     ].join('\r\n'));
   });
+
+  it('rounds calculated values instead of exporting floating-point noise', () => {
+    expect(buildBurndownCsv([
+      { date: '2026-10-01', ideal: 15.555555555555555, actual: 14.5, projection: 7.249999999999999 },
+    ])).toContain('2026-10-01,15.56,14.5,7.25');
+  });
 });
 
 describe('needsActualTime', () => {
@@ -257,12 +277,13 @@ describe('needsActualTime', () => {
 
 describe('board preferences', () => {
   it('normalizes unsafe values and preserves valid choices', () => {
-    expect(normalizePreferences({ activeColor: 'purple', warningColor: 'invalid', defaultSprintDays: 21, copyEstimateToActual: false, remindMissingEstimate: true })).toMatchObject({
+    expect(normalizePreferences({ activeColor: 'purple', warningColor: 'invalid', defaultSprintDays: 21, copyEstimateToActual: false, remindMissingEstimate: true, warnOverEstimate: false })).toMatchObject({
       activeColor: 'purple',
       warningColor: 'red',
       defaultSprintDays: 21,
       copyEstimateToActual: false,
       remindMissingEstimate: true,
+      warnOverEstimate: false,
     });
   });
 

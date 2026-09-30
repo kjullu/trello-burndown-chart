@@ -214,12 +214,16 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   const sprintDays = workDayRange(settings.startDate, settings.endDate);
 
   const normalized = cards.map((card) => ({ ...card, time: normalizeTimeData(card.time) }));
-  const remainingOf = (card, dateKey) => (card.time.completedAt && card.time.completedAt < dateKey
+  const remainingAtStartOfDay = (card, dateKey) => (card.time.completedAt && card.time.completedAt < dateKey
+    ? 0
+    : estimateAsOf(card.time, dateKey));
+  const remainingOf = (card, dateKey) => (card.time.completedAt && card.time.completedAt <= dateKey
     ? 0
     : estimateAsOf(card.time, dateKey));
   const remainingOn = (dateKey) => normalized.reduce((sum, card) => sum + remainingOf(card, dateKey), 0);
 
-  const baseline = sprintDays.length ? remainingOn(sprintDays[0]) : remainingOn(settings.startDate);
+  const baselineDate = sprintDays[0] ?? settings.startDate;
+  const baseline = normalized.reduce((sum, card) => sum + remainingAtStartOfDay(card, baselineDate), 0);
   const lastActualDay = todayKey < settings.endDate ? todayKey : settings.endDate;
   const observationDay = todayKey < settings.startDate
     ? settings.startDate
@@ -298,9 +302,13 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
 export function buildBurndownCsv(points) {
   const rows = [
     ['Dato', 'Ideelle resterende timer', 'Faktiske resterende timer', 'Prognose'],
-    ...points.map((point) => [point.date, point.ideal, point.actual ?? '', point.projection ?? '']),
+    ...points.map((point) => [point.date, csvNumber(point.ideal), csvNumber(point.actual), csvNumber(point.projection)]),
   ];
   return rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
+}
+
+function csvNumber(value) {
+  return value === null || value === undefined ? '' : Number(value.toFixed(2));
 }
 
 function csvCell(value) {

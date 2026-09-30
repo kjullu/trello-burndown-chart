@@ -29,9 +29,7 @@ window.TrelloPowerUp.initialize({
       icon,
       text: data.completedAt ? `${formatHours(data.actual)} / ${formatHours(data.estimate)}` : formatHours(data.estimate),
       monochrome: false,
-      color: data.completedAt
-        ? preferences.warnOverEstimate && data.actual > data.estimate ? preferences.warningColor : preferences.completedColor
-        : preferences.activeColor,
+      color: data.completedAt ? preferences.completedColor : preferences.activeColor,
     }];
   },
   'card-detail-badges': async (t) => {
@@ -61,9 +59,7 @@ window.TrelloPowerUp.initialize({
     return [{
       title: 'Tid',
       text: data.completedAt ? `${formatHours(data.actual)} faktisk · ${formatHours(data.estimate)} estimeret` : `${formatHours(data.estimate)} estimeret`,
-      color: data.completedAt
-        ? preferences.warnOverEstimate && data.actual > data.estimate ? preferences.warningColor : preferences.completedColor
-        : preferences.activeColor,
+      color: data.completedAt ? preferences.completedColor : preferences.activeColor,
       callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=4', height: 350 }),
     }];
   },
@@ -74,7 +70,7 @@ window.TrelloPowerUp.initialize({
   }],
   'show-settings': (t) => t.popup({
     title: 'Sprintline-indstillinger',
-    url: './settings.html?v=3',
+    url: './settings.html?v=4',
     height: 820,
   }),
 });
