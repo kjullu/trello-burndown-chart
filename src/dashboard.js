@@ -13,9 +13,12 @@ const defaultDemoTimes = {
   c5: { estimate: 8, actual: null, completedAt: null },
 };
 const wikipediaBaselineDemo = demoScenario === 'wikipedia-baseline';
+const addedWorkDemo = demoScenario === 'added-work';
 const demoTimes = wikipediaBaselineDemo
   ? { c1: { estimate: 2, actual: null, completedAt: null, estimateHistory: [{ date: null, estimate: 2 }] } }
-  : defaultDemoTimes;
+  : addedWorkDemo
+    ? { ...defaultDemoTimes, c6: { estimate: 10, estimateHistory: [{ date: '2026-09-23', estimate: 10 }] } }
+    : defaultDemoTimes;
 const demoClient = {
   board: async () => ({ name: wikipediaBaselineDemo ? 'Wikipedia-baseline test' : 'Produktlancering' }),
   cards: async () => wikipediaBaselineDemo ? [
@@ -26,6 +29,7 @@ const demoClient = {
     { id: 'c3', name: 'Klargør betalingsside', url: '#', dueComplete: false },
     { id: 'c4', name: 'Skriv hjælpetekster', url: '#', dueComplete: true },
     { id: 'c5', name: 'Test mobilvisning', url: '#', dueComplete: true },
+    ...(addedWorkDemo ? [{ id: 'c6', name: 'Ny opgave tilføjet 23. september', url: '#', dueComplete: false }] : []),
   ],
   get: async (scope, visibility, key, fallback) => key === BOARD_SETTINGS_KEY
     ? wikipediaBaselineDemo

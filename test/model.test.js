@@ -33,7 +33,7 @@ describe('estimate history', () => {
   });
 
   it('appends a point when the estimate changes and skips no-op saves', () => {
-    expect(recordEstimateChange([], '2026-09-10', 5)).toEqual([{ date: null, estimate: 5 }]);
+    expect(recordEstimateChange([], '2026-09-10', 5)).toEqual([{ date: '2026-09-10', estimate: 5 }]);
     expect(recordEstimateChange([{ date: null, estimate: 5 }], '2026-09-12', 5)).toEqual([{ date: null, estimate: 5 }]);
     expect(recordEstimateChange([{ date: null, estimate: 5 }], '2026-09-12', 9)).toEqual([
       { date: null, estimate: 5 },
@@ -234,16 +234,45 @@ describe('buildBurndown', () => {
     expect(result.points.map((point) => point.date)).not.toContain('2026-09-06');
   });
 
-  it('migrates a dated first estimate so the ideal and actual lines start together', () => {
+  it('preserves the date of a first estimate added during the sprint', () => {
     const cards = [{ time: { estimate: 2, estimateHistory: [{ date: '2026-09-26', estimate: 2 }] } }];
     const result = buildBurndown(cards, { startDate: '2026-09-24', endDate: '2026-09-29' }, '2026-09-26', { hoursPerDay: 8, teamSize: 1, efficiencyFactor: 1 });
-    expect(result.baseline).toBe(2);
+    expect(result.baseline).toBe(0);
     expect(result.remaining).toBe(2);
     expect(result.projectedEndDate).toBe('2026-09-28');
-    expect(result.points[0]).toMatchObject({ ideal: 2, actual: 2 });
+    expect(result.points[0]).toMatchObject({ ideal: 0, actual: 0 });
     expect(result.points.map((point) => point.date)).not.toContain('2026-09-26');
-    expect(result.points.find((point) => point.date === '2026-09-25').projection).toBe(2);
-    expect(result.points.find((point) => point.date === '2026-09-28').projection).toBe(0);
+    expect(result.points.find((point) => point.date === '2026-09-25').actual).toBe(0);
+  });
+
+  it('raises the actual line on the first-estimate save date without changing earlier points or the ideal line', () => {
+    const settings = { startDate: '2026-09-01', endDate: '2026-09-04' };
+    const existing = [{ time: { estimate: 10 } }];
+    const before = buildBurndown(existing, settings, '2026-09-04');
+    const added = normalizeTimeData({ estimate: 5, estimateHistory: recordEstimateChange([], '2026-09-03', 5) });
+    // Round-trip through storage and normalize again, as the dashboard does.
+    const result = buildBurndown([...existing, { time: JSON.parse(JSON.stringify(added)) }], settings, '2026-09-04');
+
+    expect(result.points.map((point) => point.actual)).toEqual([10, 10, 15, 15]);
+    expect(result.points.map((point) => point.ideal)).toEqual(before.points.map((point) => point.ideal));
+    expect(result.baseline).toBe(10);
+    expect(result.remaining).toBe(15);
+    expect(buildBurndownCsv(result.points)).toContain('2026-09-03,3.33,15,');
+  });
+
+  it('keeps dated estimates saved before sprint start in the initial backlog', () => {
+    const time = { estimate: 5, estimateHistory: recordEstimateChange([], '2026-08-31', 5) };
+    const result = buildBurndown([{ time }], { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
+    expect(result.baseline).toBe(5);
+    expect(result.points[0]).toMatchObject({ ideal: 5, actual: 5 });
+  });
+
+  it('burns newly added work on its completion date', () => {
+    const time = { estimate: 5, actual: 6, completedAt: '2026-09-04', estimateHistory: recordEstimateChange([], '2026-09-03', 5) };
+    const result = buildBurndown([{ time }], { startDate: '2026-09-01', endDate: '2026-09-04' }, '2026-09-04');
+    expect(result.points.map((point) => point.actual)).toEqual([0, 0, 5, 0]);
+    expect(result.completedCount).toBe(1);
+    expect(result.variance).toBe(1);
   });
 });
 

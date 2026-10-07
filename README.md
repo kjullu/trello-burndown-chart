@@ -71,7 +71,7 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 
 Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
 
-Værdien på den blå linje er **summen af den indsats, der er tilbage efter dagens registreringer** — ikke en løbende nedskrivning af en fast total. Et korts første estimat regnes som en del af sprintens oprindelige backlog, også hvis estimatet først indtastes efter sprintstart. Senere estimatændringer gælder fra ændringsdatoen og ændrer ikke fortiden. Arbejde, der afsluttes på en given dato, er brændt af på dagens punkt, mens den ideelle linje stadig starter ved sprintens oprindelige backlog. Den ideelle linje ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender bruger ingen kapacitet og vises ikke på tidsaksen.
+Værdien på den blå linje er **summen af den indsats, der er tilbage efter dagens registreringer** — ikke en løbende nedskrivning af en fast total. Et nyt estimat tæller med fra den dato, det gemmes. Tilføjes der arbejde midt i sprinten, stiger den blå linje derfor fra den dag, uden at tidligere punkter eller den ideelle linje ændres. Estimatændringer gælder også fra ændringsdatoen. Ældre kort uden en registreret dato for det første estimat regnes som en del af den oprindelige backlog, fordi tilføjelsesdatoen ikke kendes. Grafen viser én samlet værdi pr. arbejdsdag, så tilføjelser og afslutninger samme dag kan udligne hinanden. Ændringer i weekenden vises på næste arbejdsdags punkt. Arbejde, der afsluttes på en given dato, er brændt af på dagens punkt, mens den ideelle linje stadig starter ved sprintens oprindelige backlog. Den ideelle linje ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender bruger ingen kapacitet og vises ikke på tidsaksen.
 
 ### Prognose, velocity og effektivitet
 
@@ -146,7 +146,7 @@ Demo-dashboardet kan åbnes uden Trello på:
 http://localhost:5173/dashboard.html?demo
 ```
 
-Regressionseksemplet, hvor det første estimat indtastes midt i sprinten, kan ses på `http://localhost:5173/dashboard.html?demo=wikipedia-baseline`. Demoen viser, at den faktiske og ideelle linje starter sammen. Demoerne bruger faste datoer og data, så resultatet er det samme uanset hvornår de åbnes.
+Eksemplet på tilføjet arbejde kan ses på `http://localhost:5173/dashboard.html?demo=added-work`. Her tilføjes 10 timer den 23. september, så den blå linje stiger den dag. Eksemplet på en oprindelig backlog kan ses på `http://localhost:5173/dashboard.html?demo=wikipedia-baseline`. Her starter den faktiske og ideelle linje sammen. Demoerne bruger faste datoer og data, så resultatet er det samme uanset hvornår de åbnes.
 
 For at teste selve Power-Up-integrationen skal den lokale server eksponeres via en HTTPS-tunnel. Brug tunnelens rodadresse som Iframe Connector URL i en test-Power-Up.
 
