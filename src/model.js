@@ -316,6 +316,7 @@ function csvCell(value) {
 }
 
 export function formatHours(value) {
+  if (value === null || value === undefined) return '–';
   return `${new Intl.NumberFormat('da-DK', { maximumFractionDigits: 2 }).format(roundToTwoDecimals(value))} t`;
 }
 

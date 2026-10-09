@@ -297,6 +297,12 @@ describe('buildBurndownCsv', () => {
 });
 
 describe('hour formatting', () => {
+  it('shows missing hours without treating them as zero', () => {
+    expect(formatHours(null)).toBe('–');
+    expect(formatHours(undefined)).toBe('–');
+    expect(formatHours(0)).toBe('0 t');
+  });
+
   it('shows up to two decimal places everywhere hours are formatted', () => {
     expect(formatHours(2)).toBe('2 t');
     expect(formatHours(2.75)).toBe('2,75 t');
