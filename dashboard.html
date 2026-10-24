@@ -31,29 +31,34 @@
 
       <section id="loading" class="loading-state"><span class="pulse-dot"></span><p>Samler timer fra boardet...</p></section>
       <section id="dashboard-content" hidden>
-        <div class="metric-strip" aria-label="Sprintstatus">
-          <article><span>Tilbage</span><strong id="remaining-hours">0 t</strong></article>
-          <article><span>Færdige kort</span><strong id="completed-count">0 / 0</strong></article>
-          <article><span>Estimat mod faktisk</span><strong id="variance">0 t</strong></article>
-          <article><span>Velocity</span><strong id="velocity">–</strong></article>
-          <article><span>Effektivitet</span><strong id="efficiency">–</strong></article>
-          <article><span>Prognose</span><strong id="prognosis">–</strong></article>
-        </div>
+        <div id="verdict" class="verdict" role="status"><b id="verdict-label"></b><p id="verdict-text"></p></div>
 
-        <section class="chart-card">
+        <section class="panel stat-grid" aria-label="Sprintstatus">
+          <div class="stat"><span>Tilbage</span><strong id="remaining-hours">0 t</strong><small id="remaining-total"></small></div>
+          <div class="stat"><span>Færdige kort</span><strong id="completed-count">0 / 0</strong><small id="completed-note"></small></div>
+          <div class="stat"><span>Prognose</span><strong id="prognosis">–</strong><small id="prognosis-note"></small></div>
+          <div class="stat stat-secondary">
+            <div><span>Velocity</span><strong id="velocity">–</strong></div>
+            <div><span>Effektivitet</span><strong id="efficiency">–</strong></div>
+            <div><span>Estimat mod faktisk</span><strong id="variance">0 t</strong></div>
+          </div>
+        </section>
+
+        <section class="panel chart-card" aria-labelledby="chart-title">
           <div class="chart-heading">
-            <div><h2>Timer tilbage</h2><p id="date-range"></p></div>
+            <div><h2 id="chart-title">Timer tilbage</h2><p id="date-range"></p></div>
             <div class="legend" aria-label="Signaturforklaring">
               <span><i class="legend-actual"></i>Faktisk</span>
               <span><i class="legend-ideal"></i>Ideel</span>
               <span><i class="legend-projection"></i>Prognose</span>
             </div>
           </div>
-          <div id="chart" class="chart" role="img" aria-label="Burndown-graf"></div>
+          <div id="chart" class="chart"></div>
+          <p class="chart-hint">Hold musen over grafen, eller fokusér den og brug piletasterne for at se hver dag.</p>
         </section>
 
-        <section class="task-section">
-          <div class="section-heading"><h2>Opgaver</h2><span id="tracked-label"></span></div>
+        <section class="panel task-section" aria-labelledby="tasks-title">
+          <div class="section-heading"><h2 id="tasks-title">Opgaver</h2><span id="tracked-label"></span></div>
           <div id="task-list" class="task-list"></div>
         </section>
       </section>

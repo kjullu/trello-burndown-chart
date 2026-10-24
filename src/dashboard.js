@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatDanishDate, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatDanishDate, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, workDayRange } from './model.js';
 import { renderChart } from './chart.js';
 import { createTrelloClient } from './trello-client.js';
 
@@ -71,6 +71,10 @@ function formatDate(date) {
   return new Intl.DateTimeFormat('da-DK', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`));
 }
 
+function formatShortDate(date) {
+  return new Intl.DateTimeFormat('da-DK', { day: 'numeric', month: 'short' }).format(new Date(`${date}T12:00:00`));
+}
+
 for (const field of ['start-date', 'end-date']) {
   const input = document.getElementById(field);
   const picker = document.getElementById(`${field}-picker`);
@@ -78,36 +82,95 @@ for (const field of ['start-date', 'end-date']) {
   input.addEventListener('change', () => { picker.value = parseDanishDate(input.value) || ''; });
 }
 
+const taskGroups = [
+  { title: 'Kræver handling', matches: (card) => needsActualTime(card) },
+  { title: 'Åbne', matches: (card) => !needsActualTime(card) && !card.time.completedAt },
+  { title: 'Færdige', matches: (card) => Boolean(card.time.completedAt) },
+];
+
+function hoursBar(className, hours, maxHours) {
+  const bar = document.createElement('span');
+  bar.className = `hours-bar ${className}`;
+  const fill = document.createElement('i');
+  fill.style.width = `${Math.min(100, ((hours || 0) / maxHours) * 100)}%`;
+  bar.append(fill);
+  return bar;
+}
+
+function renderTaskRow(card, maxHours) {
+  const missingActual = needsActualTime(card);
+  const row = document.createElement('article');
+  row.className = `task-row${card.time.completedAt ? ' is-complete' : ''}${missingActual ? ' needs-actual' : ''}`;
+  const status = document.createElement('span');
+  status.className = 'task-status';
+  status.setAttribute('aria-label', missingActual ? 'Mangler faktisk tid' : card.time.completedAt ? 'Færdig' : 'Åben');
+  const text = document.createElement('div');
+  const name = document.createElement('a');
+  name.href = card.url;
+  name.target = '_blank';
+  name.rel = 'noreferrer';
+  name.textContent = card.name;
+  const detail = document.createElement('small');
+  detail.textContent = missingActual
+    ? `Mangler faktisk tid · ${formatHours(card.time.estimate)} estimeret`
+    : card.time.completedAt
+      ? `${formatHours(card.time.actual)} faktisk · ${formatHours(card.time.estimate)} estimeret`
+      : `${formatHours(card.time.estimate)} tilbage`;
+  text.append(name, detail);
+  const bars = document.createElement('div');
+  bars.className = 'task-bars';
+  bars.setAttribute('aria-hidden', 'true');
+  bars.append(hoursBar('is-estimate', card.time.estimate, maxHours));
+  if (card.time.actual) bars.append(hoursBar(card.time.actual > (card.time.estimate || 0) ? 'is-actual is-over' : 'is-actual', card.time.actual, maxHours));
+  row.append(status, text, bars);
+  return row;
+}
+
 function renderTaskList(tracked) {
   const list = document.querySelector('#task-list');
   list.replaceChildren();
-  [...tracked].sort((a, b) => Number(Boolean(a.time.completedAt)) - Number(Boolean(b.time.completedAt))).forEach((card) => {
-    const missingActual = needsActualTime(card);
-    const row = document.createElement('article');
-    row.className = `task-row${card.time.completedAt ? ' is-complete' : ''}${missingActual ? ' needs-actual' : ''}`;
-    const status = document.createElement('span');
-    status.className = 'task-status';
-    status.setAttribute('aria-label', missingActual ? 'Mangler faktisk tid' : card.time.completedAt ? 'Færdig' : 'Åben');
-    const text = document.createElement('div');
-    const name = document.createElement('a');
-    name.href = card.url;
-    name.target = '_blank';
-    name.rel = 'noreferrer';
-    name.textContent = card.name;
-    const detail = document.createElement('small');
-    detail.textContent = missingActual
-      ? `Mangler faktisk tid · ${formatHours(card.time.estimate)} estimeret`
-      : card.time.completedAt
-        ? `${formatHours(card.time.actual)} faktisk · ${formatHours(card.time.estimate)} estimeret`
-        : `${formatHours(card.time.estimate)} tilbage`;
-    text.append(name, detail);
-    row.append(status, text);
-    list.append(row);
+  const maxHours = Math.max(1, ...tracked.map((card) => Math.max(card.time.estimate || 0, card.time.actual || 0)));
+  taskGroups.forEach((group) => {
+    const groupCards = tracked.filter(group.matches);
+    if (!groupCards.length) return;
+    const section = document.createElement('section');
+    section.className = 'task-group';
+    const heading = document.createElement('h3');
+    heading.textContent = `${group.title} · ${groupCards.length}`;
+    section.append(heading, ...groupCards.map((card) => renderTaskRow(card, maxHours)));
+    list.append(section);
   });
 }
 
+function workDaysAfter(fromDate, toDate) {
+  return Math.max(0, workDayRange(fromDate, toDate).length - 1);
+}
+
+function renderVerdict(result, settings) {
+  const verdict = document.querySelector('#verdict');
+  const label = document.querySelector('#verdict-label');
+  const text = document.querySelector('#verdict-text');
+  if (result.remaining <= 0) {
+    verdict.className = 'verdict is-done';
+    label.textContent = 'Færdig';
+    text.textContent = 'Alle estimerede timer i sprinten er brændt ned.';
+    return;
+  }
+  const daysLate = result.projectedEndDate > settings.endDate ? workDaysAfter(settings.endDate, result.projectedEndDate) : 0;
+  if (daysLate > 0) {
+    verdict.className = 'verdict is-late';
+    label.textContent = `${daysLate} ${daysLate === 1 ? 'arbejdsdag' : 'arbejdsdage'} bagud`;
+    text.textContent = `Med det nuværende tempo bliver sprinten færdig ${formatDate(result.projectedEndDate)} i stedet for ${formatDate(settings.endDate)}.`;
+    return;
+  }
+  verdict.className = 'verdict is-on-track';
+  label.textContent = 'På sporet';
+  text.textContent = `Med det nuværende tempo bliver sprinten færdig ${formatDate(result.projectedEndDate)}, inden slutdatoen ${formatDate(settings.endDate)}.`;
+}
+
 function render(settings, preferences) {
-  const result = buildBurndown(cards, settings, demoMode ? '2026-09-26' : localDateKey(), preferences);
+  const today = demoMode ? '2026-09-26' : localDateKey();
+  const result = buildBurndown(cards, settings, today, preferences);
   currentBurndown = { ...result, ...settings };
   for (const [field, date] of [['start-date', settings.startDate], ['end-date', settings.endDate]]) {
     document.getElementById(field).value = formatDanishDate(date);
@@ -121,8 +184,15 @@ function render(settings, preferences) {
   }
   document.querySelector('#empty-state').hidden = true;
   document.querySelector('#dashboard-content').hidden = false;
+  const missingActualCount = result.tracked.filter((card) => needsActualTime(card)).length;
+  renderVerdict(result, settings);
   document.querySelector('#remaining-hours').textContent = formatHours(result.remaining);
+  document.querySelector('#remaining-total').textContent = `af ${formatHours(result.totalEstimate)} ved sprintstart`;
   document.querySelector('#completed-count').textContent = `${result.completedCount} / ${result.tracked.length}`;
+  document.querySelector('#completed-note').textContent = missingActualCount
+    ? `${missingActualCount} mangler faktisk tid`
+    : `${result.tracked.length - result.completedCount} åbne`;
+  document.querySelector('#completed-note').className = missingActualCount ? 'metric-warning' : '';
   const variance = result.variance;
   document.querySelector('#variance').textContent = `${variance > 0 ? '+' : ''}${formatHours(variance)}`;
   document.querySelector('#variance').className = variance > 0 ? 'metric-warning' : '';
@@ -131,11 +201,12 @@ function render(settings, preferences) {
     ? `${Math.round(result.plannedEfficiency * 100)}% (planlagt)`
     : `${Math.round(result.efficiency * 100)}%`;
   document.querySelector('#efficiency').className = result.measuredEfficiency !== null && result.efficiency < 1 ? 'metric-warning' : '';
-  document.querySelector('#prognosis').textContent = formatDate(result.projectedEndDate);
+  document.querySelector('#prognosis').textContent = formatShortDate(result.projectedEndDate);
   document.querySelector('#prognosis').className = result.projectedEndDate > settings.endDate ? 'metric-warning' : '';
-  document.querySelector('#date-range').textContent = `${formatDate(settings.startDate)} til ${formatDate(settings.endDate)}`;
+  document.querySelector('#prognosis-note').textContent = `slutdato ${formatShortDate(settings.endDate)}`;
+  document.querySelector('#date-range').textContent = `${formatDate(settings.startDate)} til ${formatDate(settings.endDate)} · ${workDayRange(settings.startDate, settings.endDate).length} arbejdsdage`;
   document.querySelector('#tracked-label').textContent = `${result.tracked.length} kort med estimat`;
-  renderChart(document.querySelector('#chart'), result.points, result.totalEstimate);
+  renderChart(document.querySelector('#chart'), result.points, result.totalEstimate, { today });
   renderTaskList(result.tracked);
 }
 
