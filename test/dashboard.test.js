@@ -13,6 +13,7 @@ function element() {
   return {
     hidden: true,
     textContent: '',
+    style: {},
     children: [],
     addEventListener: vi.fn(),
     setAttribute: vi.fn(),
@@ -53,7 +54,8 @@ describe('dashboard task list', () => {
     await import('../src/dashboard.js');
 
     await vi.waitFor(() => expect(getElement('#task-list').children).toHaveLength(1));
-    const row = getElement('#task-list').children[0];
+    const [heading, row] = getElement('#task-list').children[0].children;
+    expect(heading.textContent).toBe('Færdige · 1');
     expect(row.children[1].children[1].textContent).toBe(detail);
     expect(getElement('#dashboard-content').hidden).toBe(false);
     expect(getElement('#dashboard-error').hidden).toBe(true);
