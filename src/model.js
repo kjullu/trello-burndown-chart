@@ -95,6 +95,13 @@ export function recordEstimateChange(history, dateKey, nextEstimate) {
   return normalizeEstimateHistory(entries);
 }
 
+// A card registered after it was finished needs its estimate in place on the completion day.
+export function backfillEstimate(history, dateKey, nextEstimate) {
+  const estimate = positiveNumber(nextEstimate);
+  if (!estimate || !validDate(dateKey) || estimateAsOf({ estimateHistory: history }, dateKey) > 0) return history;
+  return normalizeEstimateHistory([...history, { date: dateKey.slice(0, 10), estimate }]);
+}
+
 export function estimateAsOf(time, dateKey) {
   const history = time?.estimateHistory;
   if (!Array.isArray(history)) return positiveNumber(time?.estimate) ?? 0;
@@ -235,7 +242,7 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
 
   const elapsedDays = lastActualDay >= settings.startDate ? Math.max(1, workDayRange(settings.startDate, lastActualDay).length) : 0;
   const velocity = elapsedDays > 0 && completedEstimate > 0 ? completedEstimate / elapsedDays : null;
-  const measuredEfficiency = totalActual > 0 ? completedEstimate / totalActual : null;
+  const measuredEfficiency = totalActual > 0 && completedEstimate > 0 ? completedEstimate / totalActual : null;
   const efficiency = measuredEfficiency ?? plannedEfficiency;
   const burnRate = hoursPerDay * teamSize * efficiency;
 
@@ -244,7 +251,10 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   const predictedEndDate = predictedDays > 0 ? addWorkDays(sprintDays[0] ?? settings.startDate, predictedDays - 1) : null;
   const projectedDays = remaining > 0 && burnRate > 0 ? Math.ceil(remaining / burnRate) : 0;
   const projectionOrigin = lastActualDay >= settings.startDate ? lastActualDay : settings.startDate;
-  const projectedEndDate = projectedDays > 0 ? addWorkDays(projectionOrigin, projectedDays) : projectionOrigin;
+  // Without a burn rate there is no honest projection while work remains.
+  const projectedEndDate = remaining > 0 && burnRate <= 0
+    ? null
+    : projectedDays > 0 ? addWorkDays(projectionOrigin, projectedDays) : projectionOrigin;
 
   const points = sprintDays.map((date) => {
     const sprintIndex = sprintDays.indexOf(date);
@@ -259,7 +269,7 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
   });
 
   const projectionStart = points.reduce((last, point, index) => (point.actual === null ? last : index), -1);
-  if (projectionStart >= 0 && points.length) {
+  if (projectionStart >= 0 && points.length && projectedEndDate) {
     const from = points[projectionStart].actual;
     const projectionEnd = points.findIndex((point) => point.date === projectedEndDate);
     const visibleEnd = projectionEnd === -1 ? points.length - 1 : projectionEnd;

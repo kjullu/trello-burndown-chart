@@ -156,6 +156,12 @@ function renderVerdict(result, settings) {
     text.textContent = 'Alle estimerede timer i sprinten er brændt ned.';
     return;
   }
+  if (!result.projectedEndDate) {
+    verdict.className = 'verdict is-late';
+    label.textContent = 'Ukendt tempo';
+    text.textContent = 'Der er timer tilbage, men intet tempo at beregne en prognose ud fra.';
+    return;
+  }
   const daysLate = result.projectedEndDate > settings.endDate ? workDaysAfter(settings.endDate, result.projectedEndDate) : 0;
   if (daysLate > 0) {
     verdict.className = 'verdict is-late';
@@ -201,12 +207,12 @@ function render(settings, preferences) {
     ? `${Math.round(result.plannedEfficiency * 100)}% (planlagt)`
     : `${Math.round(result.efficiency * 100)}%`;
   document.querySelector('#efficiency').className = result.measuredEfficiency !== null && result.efficiency < 1 ? 'metric-warning' : '';
-  document.querySelector('#prognosis').textContent = formatShortDate(result.projectedEndDate);
-  document.querySelector('#prognosis').className = result.projectedEndDate > settings.endDate ? 'metric-warning' : '';
+  document.querySelector('#prognosis').textContent = result.projectedEndDate ? formatShortDate(result.projectedEndDate) : '–';
+  document.querySelector('#prognosis').className = !result.projectedEndDate || result.projectedEndDate > settings.endDate ? 'metric-warning' : '';
   document.querySelector('#prognosis-note').textContent = `slutdato ${formatShortDate(settings.endDate)}`;
   document.querySelector('#date-range').textContent = `${formatDate(settings.startDate)} til ${formatDate(settings.endDate)} · ${workDayRange(settings.startDate, settings.endDate).length} arbejdsdage`;
   document.querySelector('#tracked-label').textContent = `${result.tracked.length} kort med estimat`;
-  renderChart(document.querySelector('#chart'), result.points, result.totalEstimate, { today });
+  renderChart(document.querySelector('#chart'), result.points, result.totalEstimate, { today, endDate: settings.endDate });
   renderTaskList(result.tracked);
 }
 
@@ -256,7 +262,7 @@ document.querySelector('#settings-form').addEventListener('submit', async (event
     return;
   }
   if (settings.startDate > settings.endDate) {
-    error.textContent = 'Slutdatoen skal ligge efter startdatoen.';
+    error.textContent = 'Slutdatoen må ikke ligge før startdatoen.';
     error.hidden = false;
     return;
   }

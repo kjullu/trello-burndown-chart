@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
+import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('keeps an explicitly empty estimate history empty', () => {
@@ -345,5 +345,36 @@ describe('board preferences', () => {
 
   it('uses the configured sprint duration for new sprints', () => {
     expect(defaultSprintDates(new Date('2026-09-24T12:00:00'), 7)).toEqual({ startDate: '2026-09-24', endDate: '2026-09-30' });
+  });
+});
+
+describe('cards registered after completion', () => {
+  const settings = { startDate: '2026-09-21', endDate: '2026-09-25' };
+  const open = { id: 'b', time: { estimate: 10, estimateHistory: [{ date: null, estimate: 10 }] } };
+
+  it('ignores efficiency when completed cards had no estimate on their completion day', () => {
+    const late = { id: 'a', time: { estimate: 8, actual: 8, completedAt: '2026-09-22', estimateHistory: [{ date: '2026-09-24', estimate: 8 }] } };
+    const result = buildBurndown([late, open], settings, '2026-09-24');
+    expect(result.measuredEfficiency).toBeNull();
+    expect(result.burnRate).toBeGreaterThan(0);
+  });
+
+  it('backfills a missing estimate on the completion day', () => {
+    const history = backfillEstimate(recordEstimateChange([], '2026-09-24', 8), '2026-09-22', 8);
+    const card = { id: 'a', time: { estimate: 8, actual: 6, completedAt: '2026-09-22', estimateHistory: history } };
+    expect(buildBurndown([card, open], settings, '2026-09-24').measuredEfficiency).toBeCloseTo(8 / 6);
+  });
+
+  it('backfills even when the estimate itself is unchanged', () => {
+    const stored = [{ date: '2026-09-24', estimate: 8 }];
+    const history = backfillEstimate(recordEstimateChange(stored, '2026-09-24', 8), '2026-09-22', 8);
+    expect(estimateAsOf({ estimateHistory: history }, '2026-09-22')).toBe(8);
+  });
+
+  it('keeps old estimates when a completed card is edited later', () => {
+    const stored = [{ date: '2026-09-21', estimate: 8 }];
+    const history = backfillEstimate(recordEstimateChange(stored, '2026-09-24', 12), '2026-09-21', 12);
+    expect(estimateAsOf({ estimateHistory: history }, '2026-09-21')).toBe(8);
+    expect(estimateAsOf({ estimateHistory: history }, '2026-09-24')).toBe(12);
   });
 });
