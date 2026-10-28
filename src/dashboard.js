@@ -212,7 +212,7 @@ function render(settings, preferences) {
   document.querySelector('#prognosis-note').textContent = `slutdato ${formatShortDate(settings.endDate)}`;
   document.querySelector('#date-range').textContent = `${formatDate(settings.startDate)} til ${formatDate(settings.endDate)} · ${workDayRange(settings.startDate, settings.endDate).length} arbejdsdage`;
   document.querySelector('#tracked-label').textContent = `${result.tracked.length} kort med estimat`;
-  renderChart(document.querySelector('#chart'), result.points, result.totalEstimate, { today });
+  renderChart(document.querySelector('#chart'), result.points, result.totalEstimate, { today, endDate: settings.endDate });
   renderTaskList(result.tracked);
 }
 
@@ -262,7 +262,7 @@ document.querySelector('#settings-form').addEventListener('submit', async (event
     return;
   }
   if (settings.startDate > settings.endDate) {
-    error.textContent = 'Slutdatoen skal ligge efter startdatoen.';
+    error.textContent = 'Slutdatoen må ikke ligge før startdatoen.';
     error.hidden = false;
     return;
   }

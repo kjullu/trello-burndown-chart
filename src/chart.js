@@ -45,7 +45,7 @@ function xLabelIndexes(count) {
   return [...new Set([0, Math.floor((count - 1) / 2), count - 1])];
 }
 
-export function renderChart(container, points, totalEstimate, { today = null } = {}) {
+export function renderChart(container, points, totalEstimate, { today = null, endDate = null } = {}) {
   container.replaceChildren();
   const width = 1000;
   const height = 360;
@@ -88,7 +88,11 @@ export function renderChart(container, points, totalEstimate, { today = null } =
     svg.append(svgText(`+${formatHours(point.actual - previous.actual)} tilføjet`, { x: x(index), y: markerY - 14, class: 'added-label', 'text-anchor': 'middle' }));
   });
 
-  const todayIndex = today ? points.findIndex((point) => point.date === today) : -1;
+  // On a weekend the line sits on the last work day before today.
+  const lastDate = endDate ?? points.at(-1)?.date;
+  const todayIndex = today && points.length && today >= points[0].date && today <= lastDate
+    ? points.findLastIndex((point) => point.date <= today)
+    : -1;
   if (todayIndex !== -1) {
     svg.append(svgElement('line', { x1: x(todayIndex), x2: x(todayIndex), y1: margin.top - 8, y2: y(0), class: 'today-line' }));
     svg.append(svgText('I DAG', { x: x(todayIndex) + 6, y: margin.top - 2, class: 'today-label' }));
