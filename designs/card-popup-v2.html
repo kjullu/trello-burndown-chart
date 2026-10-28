@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sprintline · kort-popup v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" />
+<style>
+  :root {
+    --ink: #172b4d; --muted: #626f86; --paper: #f7f8fa; --surface: #fff; --line: #dfe1e6;
+    --blue: #0c66e4; --blue-dark: #0055cc; --blue-soft: rgba(12,102,228,.1);
+    --green: #1f845a; --green-soft: #dcfff1; --red: #c9372c; --red-soft: #ffedeb; --orange: #b65c02;
+    --hover: #091e420f;
+    font-family: 'Manrope', sans-serif; color: var(--ink);
+  }
+  .dark {
+    --ink: #dee4ea; --muted: #9fadbc; --paper: #161a1d; --surface: #22272b; --line: #38414a;
+    --blue: #579dff; --blue-dark: #85b8ff; --blue-soft: rgba(87,157,255,.15);
+    --green: #4bce97; --green-soft: rgba(75,206,151,.14); --red: #f87168; --red-soft: rgba(248,113,104,.14);
+    --hover: #a1bdd914; background: var(--paper);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--ink); }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .page-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; max-width: 1080px; margin: 0 auto; padding: 24px 24px 8px; }
+  .page-head h1 { margin: 0; font-size: 18px; }
+  .page-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .theme { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(304px, 1fr)); gap: 28px; max-width: 1080px; margin: 0 auto; padding: 16px 24px 40px; align-items: start; }
+  .col h2 { margin: 0 0 4px; font-size: 14px; }
+  .col > p { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; line-height: 1.45; min-height: 36px; }
+
+  .popup { width: 304px; max-width: 100%; background: var(--surface); border-radius: 8px; box-shadow: 0 8px 24px rgba(9,30,66,.18), 0 0 0 1px var(--line); overflow: hidden; }
+  .popup-title { position: relative; text-align: center; font-size: 14px; font-weight: 600; color: var(--muted); padding: 12px 36px 8px; }
+  .popup-title::after { content: '×'; position: absolute; right: 14px; top: 8px; font-size: 20px; font-weight: 400; }
+  .body { padding: 8px 16px 16px; }
+
+  .label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+  .gap { margin-top: 14px; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  .btn { flex: 1; min-height: 36px; border: 0; border-radius: 5px; font-size: 14px; font-weight: 700; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .dark .btn-primary { color: #1d2125; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-quiet { background: var(--hover); flex: 0 0 auto; padding: 0 14px; }
+  button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .err { margin: 12px 0 0; border-radius: 5px; padding: 8px 10px; font-size: 12px; color: var(--red); background: var(--red-soft); }
+  input[type=date] { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; background: var(--surface); }
+  input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+
+  /* Stepper (from A) */
+  .stepper { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .stepper:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  .step { height: 48px; border: 0; background: transparent; font-size: 20px; color: var(--muted); }
+  .step:hover { background: var(--hover); color: var(--ink); }
+  .stepper input { width: 100%; border: 0; text-align: center; font: 600 22px 'DM Mono', monospace; background: transparent; box-shadow: none !important; -moz-appearance: textfield; }
+  .stepper input::-webkit-inner-spin-button { display: none; }
+  .presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px; }
+  .presets button { height: 30px; border: 1px solid var(--line); background: transparent; border-radius: 5px; font: 500 12px 'DM Mono', monospace; color: var(--muted); }
+  .presets button:hover { color: var(--ink); background: var(--hover); }
+  .presets button.on { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+  .delta { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; min-height: 16px; }
+  .over { color: var(--orange); } .under { color: var(--green); }
+
+  /* Toggle row (from B) */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; border: 1px solid var(--line); border-radius: 7px; padding: 0 12px; min-height: 48px; cursor: pointer; }
+  .toggle-row > span { font-size: 13px; font-weight: 700; }
+  .toggle-row.on { border-color: var(--green); }
+  .toggle { position: relative; width: 40px; height: 22px; flex: 0 0 auto; }
+  .toggle input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .toggle i { position: absolute; inset: 0; border-radius: 11px; background: var(--line); transition: .15s; pointer-events: none; }
+  .toggle i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: .15s; }
+  .toggle input:checked + i { background: var(--green); }
+  .toggle input:checked + i::after { left: 21px; }
+  .toggle input:focus-visible + i { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /* Finish button (from C) */
+  .finish { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 16px; border: 1px solid var(--line); border-radius: 7px; padding: 0 12px; min-height: 48px; background: transparent; text-align: left; font-size: 13px; font-weight: 700; }
+  .finish:hover { background: var(--hover); }
+  .finish .box { width: 18px; height: 18px; flex: 0 0 auto; border-radius: 4px; border: 2px solid var(--muted); display: grid; place-items: center; color: #fff; font-size: 12px; }
+  .finish.on { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+  .finish.on .box { background: var(--green); border-color: var(--green); }
+  .date-btn { margin-left: auto; position: relative; font-weight: 600; font-size: 12px; border-radius: 4px; padding: 4px 6px; }
+  .date-btn:hover { background: var(--hover); }
+  .date-btn input { position: absolute; inset: 0; width: 100%; min-height: 0; padding: 0; opacity: 0; cursor: pointer; }
+  .toggle-row .date-btn { color: var(--muted); margin-right: 4px; }
+
+  .done-box { margin-top: 14px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <header class="page-head">
+    <div>
+      <h1>Kort-popup v2</h1>
+      <p>Alle bruger stepper og hurtigvalg fra A. Forskellen er, hvordan man markerer kortet færdigt.</p>
+    </div>
+    <button class="theme" id="theme">Mørk tilstand</button>
+  </header>
+
+  <main class="grid">
+    <!-- 1: toggle + plain date -->
+    <section class="col">
+      <h2>1 · Toggle og datofelt</h2>
+      <p>Toggle fra B. Når kortet er færdigt, kommer faktisk tid og et almindeligt datofelt frem.</p>
+      <div class="popup">
+        <div class="popup-title">Tid på kortet</div>
+        <form class="body" data-kind="toggle" novalidate>
+          <span class="label">Estimat</span>
+          <div class="stepper"><button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button><input type="number" min="0.25" step="0.25" value="4" name="est" aria-label="Estimat i timer" /><button type="button" class="step" data-d="0.5" aria-label="Mere">+</button></div>
+          <div class="presets"><button type="button">1</button><button type="button">2</button><button type="button">4</button><button type="button">6</button><button type="button">8</button></div>
+
+          <label class="toggle-row"><span>Færdig</span><span class="toggle"><input type="checkbox" name="done" /><i></i></span></label>
+
+          <div class="done-box" hidden>
+            <span class="label">Faktisk tid</span>
+            <div class="stepper"><button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button><input type="number" min="0.25" step="0.25" name="act" aria-label="Faktisk tid i timer" /><button type="button" class="step" data-d="0.5" aria-label="Mere">+</button></div>
+            <div class="delta"></div>
+            <label class="gap" style="display:block"><span class="label">Afsluttet</span><input type="date" name="date" /></label>
+          </div>
+
+          <p class="err" hidden></p>
+          <div class="actions"><button type="button" class="btn btn-quiet">Annuller</button><button class="btn btn-primary">Gem tid</button></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2: green finish button with date -->
+    <section class="col">
+      <h2>2 · Grøn færdig-knap</h2>
+      <p>Knappen fra C med datoen indbygget. Faktisk tid kommer frem under den.</p>
+      <div class="popup">
+        <div class="popup-title">Tid på kortet</div>
+        <form class="body" data-kind="finish" novalidate>
+          <span class="label">Estimat</span>
+          <div class="stepper"><button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button><input type="number" min="0.25" step="0.25" value="4" name="est" aria-label="Estimat i timer" /><button type="button" class="step" data-d="0.5" aria-label="Mere">+</button></div>
+          <div class="presets"><button type="button">1</button><button type="button">2</button><button type="button">4</button><button type="button">6</button><button type="button">8</button></div>
+
+          <button type="button" class="finish" aria-pressed="false"><span class="box"></span><span class="ftext">Markér som færdig</span>
+            <span class="date-btn" hidden><span class="date-text"></span> ▾<input type="date" name="date" aria-label="Afsluttet dato" /></span>
+          </button>
+
+          <div class="done-box" hidden>
+            <span class="label">Faktisk tid</span>
+            <div class="stepper"><button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button><input type="number" min="0.25" step="0.25" name="act" aria-label="Faktisk tid i timer" /><button type="button" class="step" data-d="0.5" aria-label="Mere">+</button></div>
+            <div class="delta"></div>
+          </div>
+
+          <p class="err" hidden></p>
+          <div class="actions"><button type="button" class="btn btn-quiet">Annuller</button><button class="btn btn-primary">Gem tid</button></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 3: toggle with date inside row -->
+    <section class="col">
+      <h2>3 · Toggle med dato i rækken</h2>
+      <p>Toggle fra B, og datoen fra C sidder i samme række. Kortest af de tre.</p>
+      <div class="popup">
+        <div class="popup-title">Tid på kortet</div>
+        <form class="body" data-kind="toggle-date" novalidate>
+          <span class="label">Estimat</span>
+          <div class="stepper"><button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button><input type="number" min="0.25" step="0.25" value="4" name="est" aria-label="Estimat i timer" /><button type="button" class="step" data-d="0.5" aria-label="Mere">+</button></div>
+          <div class="presets"><button type="button">1</button><button type="button">2</button><button type="button">4</button><button type="button">6</button><button type="button">8</button></div>
+
+          <label class="toggle-row"><span>Færdig</span>
+            <span class="date-btn" hidden><span class="date-text"></span> ▾<input type="date" name="date" aria-label="Afsluttet dato" /></span>
+            <span class="toggle"><input type="checkbox" name="done" /><i></i></span>
+          </label>
+
+          <div class="done-box" hidden>
+            <span class="label">Faktisk tid</span>
+            <div class="stepper"><button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button><input type="number" min="0.25" step="0.25" name="act" aria-label="Faktisk tid i timer" /><button type="button" class="step" data-d="0.5" aria-label="Mere">+</button></div>
+            <div class="delta"></div>
+          </div>
+
+          <p class="err" hidden></p>
+          <div class="actions"><button type="button" class="btn btn-quiet">Annuller</button><button class="btn btn-primary">Gem tid</button></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const today = new Date().toLocaleDateString('sv-SE');
+  const pretty = (v) => v ? new Date(v + 'T12:00').toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' }) : 'vælg dato';
+  const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return n > 0 ? n : null; };
+  const fmt = (n) => String(+n.toFixed(2)).replace('.', ',');
+
+  function setDelta(el, e, a) {
+    el.textContent = '';
+    if (!e || !a) return;
+    const d = a - e;
+    if (Math.abs(d) < 0.01) { el.textContent = 'Præcis som estimeret'; return; }
+    const b = document.createElement('b');
+    b.className = d > 0 ? 'over' : 'under';
+    b.textContent = `${fmt(Math.abs(d))} t ${d > 0 ? 'over' : 'under'}`;
+    el.append(b, ' estimatet');
+  }
+
+  document.getElementById('theme').onclick = (ev) => {
+    const dark = document.documentElement.classList.toggle('dark');
+    ev.target.textContent = dark ? 'Lys tilstand' : 'Mørk tilstand';
+  };
+
+  document.querySelectorAll('form').forEach((f) => {
+    const kind = f.dataset.kind;
+    const est = f.est, act = f.act, box = f.querySelector('.done-box');
+    const finish = f.querySelector('.finish'), row = f.querySelector('.toggle-row');
+    const dateBtn = f.querySelector('.date-btn'), dateText = f.querySelector('.date-text');
+    let done = false;
+    f.date.value = today;
+
+    const sync = () => {
+      f.querySelectorAll('.presets button').forEach((b) => b.classList.toggle('on', num(b.textContent) === num(est.value)));
+      box.hidden = !done;
+      if (row) row.classList.toggle('on', done);
+      if (finish) {
+        finish.classList.toggle('on', done);
+        finish.setAttribute('aria-pressed', done);
+        finish.querySelector('.box').textContent = done ? '✓' : '';
+        finish.querySelector('.ftext').textContent = done ? 'Færdig' : 'Markér som færdig';
+      }
+      if (dateBtn) { dateBtn.hidden = !done; dateText.textContent = pretty(f.date.value); }
+      setDelta(f.querySelector('.delta'), num(est.value), num(act.value));
+    };
+    const setDone = (v) => { done = v; if (done && !act.value) act.value = est.value; sync(); };
+
+    f.querySelectorAll('.step').forEach((b) => (b.onclick = () => {
+      const inp = b.parentElement.querySelector('input');
+      inp.value = Math.max(0.5, (num(inp.value) || 0) + +b.dataset.d);
+      sync();
+    }));
+    f.querySelectorAll('.presets button').forEach((b) => (b.onclick = () => { est.value = b.textContent; sync(); }));
+    if (f.done) f.done.onchange = () => setDone(f.done.checked);
+    if (finish) finish.onclick = (ev) => { if (!ev.target.closest('.date-btn')) setDone(!done); };
+    if (dateBtn) dateBtn.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); try { f.date.showPicker(); } catch { f.date.focus(); } });
+    f.oninput = sync;
+    f.onchange = sync;
+    f.onsubmit = (ev) => {
+      ev.preventDefault();
+      const err = f.querySelector('.err');
+      const bad = !num(est.value) || (done && (!num(act.value) || !f.date.value));
+      err.textContent = 'Udfyld estimatet og den faktiske tid med tal over 0.';
+      err.hidden = !bad;
+      if (!bad) { const b = f.querySelector('.btn-primary'); b.textContent = 'Gemt ✓'; setTimeout(() => (b.textContent = 'Gem tid'), 1200); }
+    };
+    sync();
+  });
+</script>
+</body>
+</html>

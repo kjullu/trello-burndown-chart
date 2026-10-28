@@ -68,18 +68,59 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .button:disabled { opacity: 0.6; cursor: wait; }
 .form-message { margin: 12px 0 0; border-radius: 5px; padding: 9px 11px; font-size: 12px; }
 .error { color: var(--red); background: #ffedeb; }
-.card-form-shell .field { gap: 9px; font-size: 14px; }
-.card-form-shell .number-input { min-height: 52px; border-radius: 6px; }
-.card-form-shell .number-input input { min-height: 50px; padding-inline: 14px; font-size: 15px; font-weight: 600; }
-.card-form-shell .number-input span { padding-right: 15px; font-size: 13px; }
-.card-form-shell .completion-panel { margin-top: 20px; border-radius: 7px; }
-.card-form-shell .check-row { align-items: center; min-height: 0; gap: 16px; padding: 16px 24px; }
-.card-form-shell .check-row input { width: 20px; height: 20px; }
-.card-form-shell .check-row strong { font-size: 14px; }
-.card-form-shell .actual-fields { gap: 16px; padding: 18px; }
-.card-form-shell .actual-fields input[type='date'] { min-height: 50px; font-size: 14px; }
-.card-form-shell .form-actions { gap: 16px; margin-top: 28px; }
-.card-form-shell .button { min-height: 48px; padding-inline: 20px; font-size: 15px; }
+.card-form-shell { padding: 12px 16px 16px; }
+.card-form-shell .field-label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.card-form-shell .field { gap: 6px; }
+.stepper { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.stepper:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.step { height: 48px; border: 0; background: transparent; color: var(--muted); font-size: 20px; }
+.step:hover { color: var(--ink); background: #091e420f; }
+.step:focus-visible, .presets button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.stepper input { width: 100%; min-width: 0; border: 0; padding: 0; color: var(--ink); background: transparent; text-align: center; font: 600 22px 'DM Mono', monospace; box-shadow: none !important; outline: none; -moz-appearance: textfield; appearance: textfield; }
+.stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+.presets { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 4px; margin-top: 8px; }
+.presets button { height: 30px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); background: transparent; font: 500 12px 'DM Mono', monospace; }
+.presets button:hover { color: var(--ink); background: #091e420f; }
+.presets button.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.card-form-shell .ignore-panel { margin-top: 12px; }
+.card-form-shell .ignore-panel .check-row { align-items: center; padding: 10px 12px; }
+.card-separator { margin: 16px -16px 0; border: 0; border-top: 1px solid var(--line); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; margin-top: 16px; border: 1px solid var(--line); border-radius: 7px; padding: 0 12px; cursor: pointer; }
+.toggle-row > span:first-child { font-size: 13px; font-weight: 700; }
+.toggle-row.on { border-color: var(--green); animation: toggle-pop 0.3s ease; }
+.toggle-date { position: relative; margin-left: auto; border-radius: 4px; padding: 4px 6px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.toggle-date:hover { background: #091e420f; }
+.toggle-date input { position: absolute; inset: 0; width: 100%; min-height: 0; padding: 0; opacity: 0; cursor: pointer; }
+.toggle { position: relative; flex: 0 0 auto; width: 40px; height: 22px; }
+.toggle input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.toggle i { position: absolute; inset: 0; border-radius: 11px; background: var(--line); pointer-events: none; transition: background 0.15s; }
+.toggle i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.toggle input:checked + i { background: var(--green); }
+.toggle input:checked + i::after { left: 21px; }
+.toggle input:focus-visible + i { outline: 2px solid var(--blue); outline-offset: 2px; }
+.done-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.done-wrap.open { grid-template-rows: 1fr; }
+.done-box { min-height: 0; overflow: hidden; opacity: 0; transition: opacity 0.15s; }
+.done-wrap.open .done-box { opacity: 1; transition-delay: 0.05s; }
+.done-box > :first-child { margin-top: 14px; }
+.time-bars { display: grid; gap: 5px; margin-top: 12px; }
+.time-bar { height: 6px; overflow: hidden; border-radius: 3px; background: #091e420f; }
+.time-bar i { display: block; height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.2s; }
+.time-bar.actual i { background: var(--green); }
+.time-bar.actual.over i { background: var(--orange); }
+.done-wrap.open .time-bar i { animation: bar-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.done-wrap.open .time-bar.actual i { animation-delay: 0.15s; }
+.time-legend { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+.time-legend .over { color: var(--orange); }
+.time-legend .under { color: var(--green); }
+.card-form-shell .form-actions { margin-top: 16px; }
+.card-form-shell .form-actions .button-primary { flex: 1; }
+@keyframes bar-grow { from { width: 0; } }
+@keyframes toggle-pop { 50% { transform: scale(1.02); } }
+@media (prefers-reduced-motion: reduce) {
+  .done-wrap, .done-box, .toggle i, .toggle i::after, .time-bar i { transition: none; }
+  .toggle-row.on, .done-wrap.open .time-bar i { animation: none; }
+}
 .settings-shell { padding: 18px; }
 .settings-group { display: grid; gap: 13px; }
 .settings-group + .settings-group { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 20px; }
@@ -210,4 +251,5 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
   .button-quiet { background: #a1bdd914; }
   .button-quiet:hover { background: #a6c5e229; }
   .error { color: #ff9c8f; background: #4f1c16; }
+  .step:hover, .presets button:hover, .toggle-date:hover, .time-bar { background: #a1bdd914; }
 }
