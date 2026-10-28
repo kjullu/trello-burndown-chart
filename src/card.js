@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, localDateKey, normalizePreferences, normalizeTimeData, recordEstimateChange } from './model.js';
+import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, backfillEstimate, localDateKey, normalizePreferences, normalizeTimeData, recordEstimateChange } from './model.js';
 
 const t = window.TrelloPowerUp.iframe();
 const form = document.querySelector('#time-form');
@@ -60,12 +60,13 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   error.hidden = true;
   const savedOn = localDateKey();
+  const history = recordEstimateChange(storedHistory, savedOn, estimate.value);
   const data = normalizeTimeData({
     estimate: estimate.value,
     actual: completed.checked ? actual.value : null,
     completedAt: completed.checked ? completedAt.value : null,
     estimateIgnored: ignored.checked,
-    estimateHistory: recordEstimateChange(storedHistory, savedOn, estimate.value),
+    estimateHistory: completed.checked ? backfillEstimate(history, completedAt.value, estimate.value) : history,
   });
   if ((!data.estimate && !ignored.checked) || (completed.checked && (!data.actual || !data.completedAt))) {
     error.textContent = 'Udfyld estimatet og den faktiske tid med tal over 0.';
