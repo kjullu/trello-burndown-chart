@@ -1,6 +1,11 @@
 import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, formatHours, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
 
 const icon = new URL('./icon.png?v=2', window.location.href).href;
+const badgeIcons = {
+  active: new URL('./badge-clock.svg', window.location.href).href,
+  completed: new URL('./badge-check.svg', window.location.href).href,
+  warning: new URL('./badge-warning.svg', window.location.href).href,
+};
 
 window.TrelloPowerUp.initialize({
   'card-buttons': () => [{
@@ -19,14 +24,14 @@ window.TrelloPowerUp.initialize({
     const preferences = normalizePreferences(storedPreferences);
     if (!preferences.showCardFrontBadges) return [];
     if (!data.estimate && preferences.remindMissingEstimate && !data.estimateIgnored) {
-      return [{ icon, text: 'Mangler estimat', color: preferences.warningColor, monochrome: false }];
+      return [{ icon: badgeIcons.warning, text: 'Mangler estimat', color: preferences.warningColor, monochrome: false }];
     }
     if (needsActualTime({ ...card, time: data })) {
-      return [{ icon, text: 'Mangler faktisk tid', color: preferences.warningColor, monochrome: false }];
+      return [{ icon: badgeIcons.warning, text: 'Mangler faktisk tid', color: preferences.warningColor, monochrome: false }];
     }
     if (!data.estimate) return [];
     return [{
-      icon,
+      icon: data.completedAt ? badgeIcons.completed : badgeIcons.active,
       text: data.completedAt ? `${formatHours(data.actual)} / ${formatHours(data.estimate)}` : formatHours(data.estimate),
       monochrome: false,
       color: data.completedAt ? preferences.completedColor : preferences.activeColor,
