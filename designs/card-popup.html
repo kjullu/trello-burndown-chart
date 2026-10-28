@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sprintline · kort-popup designs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" />
+<style>
+  :root {
+    --ink: #172b4d; --muted: #626f86; --paper: #f7f8fa; --surface: #fff; --line: #dfe1e6;
+    --blue: #0c66e4; --blue-dark: #0055cc; --blue-soft: rgba(12,102,228,.1);
+    --green: #1f845a; --green-soft: #dcfff1; --red: #c9372c; --red-soft: #ffedeb; --orange: #b65c02;
+    --hover: #091e420f;
+    font-family: 'Manrope', sans-serif; color: var(--ink);
+  }
+  .dark {
+    --ink: #dee4ea; --muted: #9fadbc; --paper: #161a1d; --surface: #22272b; --line: #38414a;
+    --blue: #579dff; --blue-dark: #85b8ff; --blue-soft: rgba(87,157,255,.15);
+    --green: #4bce97; --green-soft: rgba(75,206,151,.14); --red: #f87168; --red-soft: rgba(248,113,104,.14);
+    --hover: #a1bdd914;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--ink); }
+  .dark body, .dark { background: var(--paper); }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .page-head { display: flex; justify-content: space-between; align-items: center; max-width: 1080px; margin: 0 auto; padding: 28px 24px 8px; }
+  .page-head h1 { margin: 0; font-size: 18px; }
+  .page-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .theme { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; max-width: 1080px; margin: 0 auto; padding: 16px 24px 48px; align-items: start; }
+  .col h2 { margin: 0 0 4px; font-size: 14px; }
+  .col > p { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; line-height: 1.45; min-height: 36px; }
+
+  /* Simulates the Trello popup frame */
+  .popup { width: 304px; background: var(--surface); border-radius: 8px; box-shadow: 0 8px 24px rgba(9,30,66,.18), 0 0 0 1px var(--line); overflow: hidden; }
+  .popup-title { position: relative; text-align: center; font-size: 14px; font-weight: 600; color: var(--muted); padding: 12px 36px 8px; }
+  .popup-title::after { content: '×'; position: absolute; right: 14px; top: 8px; font-size: 20px; font-weight: 400; }
+  .body { padding: 8px 16px 16px; }
+
+  .label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  .btn { flex: 1; min-height: 36px; border: 0; border-radius: 5px; font-size: 14px; font-weight: 700; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .dark .btn-primary { color: #1d2125; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-quiet { background: var(--hover); flex: 0 0 auto; padding: 0 14px; }
+  .btn:focus-visible, .seg button:focus-visible, .step:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .mono { font-family: 'DM Mono', monospace; }
+  .err { margin: 12px 0 0; border-radius: 5px; padding: 8px 10px; font-size: 12px; color: var(--red); background: var(--red-soft); }
+  input[type=date] { width: 100%; min-height: 36px; border: 1px solid var(--line); border-radius: 5px; padding: 6px 10px; background: var(--surface); }
+  input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+
+  /* ---------- A: Stepper ---------- */
+  .stepper { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .stepper:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  .step { height: 48px; border: 0; background: transparent; font-size: 20px; color: var(--muted); }
+  .step:hover { background: var(--hover); color: var(--ink); }
+  .stepper input { width: 100%; border: 0; text-align: center; font: 600 22px 'DM Mono', monospace; background: transparent; box-shadow: none !important; }
+  .stepper input::-webkit-inner-spin-button { display: none; }
+  .stepper input { -moz-appearance: textfield; }
+  .unit { text-align: center; color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px; }
+  .presets button { height: 30px; border: 1px solid var(--line); background: transparent; border-radius: 5px; font: 500 12px 'DM Mono', monospace; color: var(--muted); }
+  .presets button:hover { color: var(--ink); background: var(--hover); }
+  .presets button.on { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+
+  .seg { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; background: var(--hover); border-radius: 7px; margin-top: 18px; }
+  .seg button { border: 0; background: transparent; border-radius: 5px; height: 32px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(9,30,66,.2); }
+  .seg button.on.done { color: var(--green); }
+
+  .done-box { margin-top: 12px; display: grid; gap: 12px; }
+  .delta { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; }
+  .delta b { font-weight: 700; }
+  .delta .over { color: var(--orange); } .delta .under { color: var(--green); }
+
+  /* ---------- B: Compact rows ---------- */
+  .rows { border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .row { display: grid; grid-template-columns: 1fr 108px; align-items: center; min-height: 48px; padding: 0 6px 0 12px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row > span { font-size: 13px; font-weight: 600; }
+  .row small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; }
+  .inline-num { display: flex; align-items: center; justify-content: flex-end; border-radius: 5px; padding: 0 8px; height: 36px; }
+  .inline-num:hover { background: var(--hover); }
+  .inline-num:focus-within { background: var(--surface); box-shadow: 0 0 0 2px var(--blue); }
+  .inline-num input { width: 100%; border: 0; background: transparent; text-align: right; font: 600 16px 'DM Mono', monospace; box-shadow: none !important; -moz-appearance: textfield; }
+  .inline-num input::-webkit-inner-spin-button { display: none; }
+  .inline-num em { font-style: normal; margin-left: 4px; color: var(--muted); font: 500 12px 'DM Mono', monospace; }
+  .toggle { justify-self: end; position: relative; width: 40px; height: 22px; margin-right: 6px; }
+  .toggle input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .toggle i { position: absolute; inset: 0; border-radius: 11px; background: var(--line); transition: .15s; pointer-events: none; }
+  .toggle i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: .15s; }
+  .toggle input:checked + i { background: var(--green); }
+  .toggle input:checked + i::after { left: 21px; }
+  .toggle input:focus-visible + i { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .row.sub { background: var(--paper); }
+  .day { display: flex; justify-content: flex-end; gap: 2px; }
+  .day button { border: 0; background: transparent; border-radius: 4px; height: 28px; padding: 0 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .day button.on { background: var(--blue-soft); color: var(--blue); }
+  .day input[type=date] { width: 30px; min-height: 28px; padding: 0 4px; border: 0; background: transparent; color: transparent; cursor: pointer; }
+  .row.sub.date { grid-template-columns: 1fr auto; }
+  .summary { margin: 10px 2px 0; font-size: 12px; color: var(--muted); }
+
+  /* ---------- C: Comparison ---------- */
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .big { border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px 8px; cursor: text; }
+  .big:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  .big.off { background: var(--paper); border-style: dashed; }
+  .big.off input { color: var(--muted); }
+  .big .label { margin: 0; font-size: 11px; }
+  .big div { display: flex; align-items: baseline; gap: 4px; }
+  .big input { width: 100%; border: 0; padding: 0; background: transparent; font: 600 26px 'DM Mono', monospace; box-shadow: none !important; -moz-appearance: textfield; }
+  .big input::-webkit-inner-spin-button { display: none; }
+  .big em { font-style: normal; color: var(--muted); font: 500 12px 'DM Mono', monospace; }
+  .bars { margin-top: 12px; display: grid; gap: 5px; }
+  .bar { height: 6px; border-radius: 3px; background: var(--hover); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 3px; transition: width .2s; }
+  .bar.e i { background: var(--blue); } .bar.a i { background: var(--green); } .bar.a.over i { background: var(--orange); }
+  .bar-legend { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .finish { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 14px; border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; background: transparent; text-align: left; font-size: 13px; font-weight: 700; }
+  .finish:hover { background: var(--hover); }
+  .finish .box { width: 18px; height: 18px; border-radius: 4px; border: 2px solid var(--muted); display: grid; place-items: center; color: #fff; font-size: 12px; }
+  .finish.on { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+  .finish.on .box { background: var(--green); border-color: var(--green); }
+  .finish small { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 12px; }
+  .finish .date-btn { margin-left: auto; position: relative; font-weight: 600; font-size: 12px; }
+  .finish .date-btn input { position: absolute; inset: 0; opacity: 0; min-height: 0; cursor: pointer; }
+</style>
+</head>
+<body>
+  <header class="page-head">
+    <div>
+      <h1>Kort-popup: tre forslag</h1>
+      <p>Alt kan klikkes. Gem-knappen validerer som den rigtige.</p>
+    </div>
+    <button class="theme" id="theme">Mørk tilstand</button>
+  </header>
+
+  <main class="grid">
+    <!-- A -->
+    <section class="col">
+      <h2>A · Stepper</h2>
+      <p>Store +/− knapper og hurtigvalg. Godt hvis de fleste estimater er hele timer.</p>
+      <div class="popup">
+        <div class="popup-title">Tid på kortet</div>
+        <form class="body" id="a" novalidate>
+          <span class="label">Estimat</span>
+          <div class="stepper">
+            <button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button>
+            <input type="number" min="0.25" step="0.25" value="4" name="est" aria-label="Estimat i timer" />
+            <button type="button" class="step" data-d="0.5" aria-label="Mere">+</button>
+          </div>
+          <div class="presets">
+            <button type="button">1</button><button type="button">2</button><button type="button">4</button><button type="button">6</button><button type="button">8</button>
+          </div>
+
+          <div class="seg" role="radiogroup">
+            <button type="button" class="on" data-s="0">I gang</button>
+            <button type="button" data-s="1">Færdig</button>
+          </div>
+
+          <div class="done-box" hidden>
+            <div>
+              <span class="label">Faktisk tid</span>
+              <div class="stepper">
+                <button type="button" class="step" data-d="-0.5" aria-label="Mindre">−</button>
+                <input type="number" min="0.25" step="0.25" name="act" aria-label="Faktisk tid i timer" />
+                <button type="button" class="step" data-d="0.5" aria-label="Mere">+</button>
+              </div>
+              <div class="delta"></div>
+            </div>
+            <label><span class="label">Afsluttet</span><input type="date" name="date" /></label>
+          </div>
+
+          <p class="err" hidden></p>
+          <div class="actions">
+            <button type="button" class="btn btn-quiet">Annuller</button>
+            <button class="btn btn-primary">Gem tid</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- B -->
+    <section class="col">
+      <h2>B · Kompakt liste</h2>
+      <p>Ligner Trellos egne felter. Mindst mulig plads, dato som I dag / I går.</p>
+      <div class="popup">
+        <div class="popup-title">Tid på kortet</div>
+        <form class="body" id="b" novalidate>
+          <div class="rows">
+            <label class="row">
+              <span>Estimat</span>
+              <span class="inline-num"><input type="number" min="0.25" step="0.25" value="4" name="est" /><em>t</em></span>
+            </label>
+            <label class="row">
+              <span>Færdig</span>
+              <span class="toggle"><input type="checkbox" name="done" /><i></i></span>
+            </label>
+            <label class="row sub" hidden>
+              <span>Faktisk tid</span>
+              <span class="inline-num"><input type="number" min="0.25" step="0.25" name="act" /><em>t</em></span>
+            </label>
+            <div class="row sub date" hidden>
+              <span>Afsluttet<small class="date-text"></small></span>
+              <div class="day">
+                <button type="button" data-o="0" class="on">I dag</button>
+                <button type="button" data-o="1">I går</button>
+                <input type="date" name="date" title="Vælg dato" aria-label="Vælg dato" />
+              </div>
+            </div>
+          </div>
+          <p class="summary" hidden></p>
+          <p class="err" hidden></p>
+          <div class="actions">
+            <button type="button" class="btn btn-quiet">Annuller</button>
+            <button class="btn btn-primary">Gem tid</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- C -->
+    <section class="col">
+      <h2>C · Sammenligning</h2>
+      <p>Estimat og faktisk tid side om side, med en bar der viser om man skred.</p>
+      <div class="popup">
+        <div class="popup-title">Tid på kortet</div>
+        <form class="body" id="c" novalidate>
+          <div class="pair">
+            <label class="big"><span class="label">Estimat</span><div><input type="number" min="0.25" step="0.25" value="4" name="est" /><em>t</em></div></label>
+            <label class="big off"><span class="label">Faktisk</span><div><input type="number" min="0.25" step="0.25" name="act" placeholder="–" disabled /><em>t</em></div></label>
+          </div>
+          <div class="bars" hidden>
+            <div class="bar e"><i></i></div>
+            <div class="bar a"><i></i></div>
+            <div class="bar-legend"><span class="l1"></span><span class="l2"></span></div>
+          </div>
+          <button type="button" class="finish">
+            <span class="box"></span> Markér som færdig
+            <small>ikke afsluttet</small>
+            <span class="date-btn" hidden><span class="date-text"></span><input type="date" name="date" aria-label="Afsluttet dato" /></span>
+          </button>
+          <p class="err" hidden></p>
+          <div class="actions">
+            <button type="button" class="btn btn-quiet">Annuller</button>
+            <button class="btn btn-primary">Gem tid</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const iso = (d) => d.toLocaleDateString('sv-SE');
+  const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
+  const pretty = (v) => new Date(v + 'T12:00').toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' });
+  const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return n > 0 ? n : null; };
+  const fmt = (n) => String(+n.toFixed(2)).replace('.', ',');
+
+  function deltaText(e, a) {
+    if (!e || !a) return '';
+    const d = a - e;
+    if (Math.abs(d) < 0.01) return 'Præcis som estimeret';
+    return d > 0 ? `<b class="over">${fmt(d)} t over</b> estimatet` : `<b class="under">${fmt(-d)} t under</b> estimatet`;
+  }
+  function validate(form, e, done, a, date) {
+    const err = form.querySelector('.err');
+    const bad = !e || (done && (!a || !date));
+    err.textContent = 'Udfyld estimatet og den faktiske tid med tal over 0.';
+    err.hidden = !bad;
+    if (!bad) {
+      const btn = form.querySelector('.btn-primary');
+      btn.textContent = 'Gemt ✓';
+      setTimeout(() => (btn.textContent = 'Gem tid'), 1200);
+    }
+  }
+
+  document.getElementById('theme').onclick = (ev) => {
+    const dark = document.documentElement.classList.toggle('dark');
+    ev.target.textContent = dark ? 'Lys tilstand' : 'Mørk tilstand';
+  };
+
+  /* A */
+  (() => {
+    const f = document.getElementById('a');
+    const est = f.est, act = f.act, box = f.querySelector('.done-box');
+    let done = false;
+    f.date.value = daysAgo(0);
+    const sync = () => {
+      f.querySelectorAll('.presets button').forEach((b) => b.classList.toggle('on', num(b.textContent) === num(est.value)));
+      f.querySelector('.delta').innerHTML = deltaText(num(est.value), num(act.value));
+    };
+    f.querySelectorAll('.step').forEach((b) => (b.onclick = () => {
+      const inp = b.parentElement.querySelector('input');
+      inp.value = Math.max(0.5, (num(inp.value) || 0) + +b.dataset.d);
+      sync();
+    }));
+    f.querySelectorAll('.presets button').forEach((b) => (b.onclick = () => { est.value = b.textContent; sync(); }));
+    f.querySelectorAll('.seg button').forEach((b) => (b.onclick = () => {
+      done = b.dataset.s === '1';
+      f.querySelectorAll('.seg button').forEach((x) => x.classList.toggle('on', x === b));
+      b.classList.toggle('done', done);
+      box.hidden = !done;
+      if (done && !act.value) act.value = est.value;
+      sync();
+    }));
+    f.oninput = sync;
+    f.onsubmit = (ev) => { ev.preventDefault(); validate(f, num(est.value), done, num(act.value), f.date.value); };
+    sync();
+  })();
+
+  /* B */
+  (() => {
+    const f = document.getElementById('b');
+    const subs = f.querySelectorAll('.row.sub'), summary = f.querySelector('.summary');
+    const dateText = f.querySelector('.date-text');
+    f.date.value = daysAgo(0);
+    const setDate = (v) => {
+      f.date.value = v;
+      f.querySelectorAll('.day button').forEach((b) => b.classList.toggle('on', daysAgo(+b.dataset.o) === v));
+      dateText.textContent = pretty(v);
+    };
+    const sync = () => {
+      const done = f.done.checked;
+      subs.forEach((r) => (r.hidden = !done));
+      const t = done ? deltaText(num(f.est.value), num(f.act.value)) : '';
+      summary.innerHTML = t; summary.hidden = !t;
+    };
+    f.done.onchange = () => { if (f.done.checked && !f.act.value) f.act.value = f.est.value; sync(); };
+    f.querySelectorAll('.day button').forEach((b) => (b.onclick = () => setDate(daysAgo(+b.dataset.o))));
+    f.date.onchange = () => setDate(f.date.value);
+    f.oninput = sync;
+    f.onsubmit = (ev) => { ev.preventDefault(); validate(f, num(f.est.value), f.done.checked, num(f.act.value), f.date.value); };
+    setDate(daysAgo(0)); sync();
+  })();
+
+  /* C */
+  (() => {
+    const f = document.getElementById('c');
+    const finish = f.querySelector('.finish'), actBox = f.act.closest('.big');
+    const bars = f.querySelector('.bars'), small = finish.querySelector('small'), dateBtn = finish.querySelector('.date-btn');
+    let done = false;
+    f.date.value = daysAgo(0);
+    const sync = () => {
+      finish.classList.toggle('on', done);
+      finish.querySelector('.box').textContent = done ? '✓' : '';
+      finish.childNodes[2].textContent = done ? ' Færdig ' : ' Markér som færdig ';
+      small.hidden = done; dateBtn.hidden = !done;
+      dateBtn.querySelector('.date-text').textContent = pretty(f.date.value) + ' ▾';
+      f.act.disabled = !done; actBox.classList.toggle('off', !done);
+      const e = num(f.est.value), a = num(f.act.value);
+      bars.hidden = !(done && e && a);
+      if (!bars.hidden) {
+        const max = Math.max(e, a);
+        bars.querySelector('.e i').style.width = (e / max) * 100 + '%';
+        bars.querySelector('.a i').style.width = (a / max) * 100 + '%';
+        bars.querySelector('.a').classList.toggle('over', a > e);
+        bars.querySelector('.l1').textContent = `Estimat ${fmt(e)} t · Faktisk ${fmt(a)} t`;
+        bars.querySelector('.l2').innerHTML = deltaText(e, a);
+      }
+    };
+    finish.onclick = (ev) => {
+      if (ev.target.closest('.date-btn')) return;
+      done = !done;
+      if (done && !f.act.value) f.act.value = f.est.value;
+      sync();
+      if (done) f.act.focus();
+    };
+    f.date.onchange = sync;
+    f.oninput = sync;
+    f.onsubmit = (ev) => { ev.preventDefault(); validate(f, num(f.est.value), done, num(f.act.value), f.date.value); };
+    sync();
+  })();
+</script>
+</body>
+</html>

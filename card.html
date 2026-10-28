@@ -9,27 +9,19 @@
   </head>
   <body class="popup-page">
     <main class="card-form-shell">
-      <form id="time-form">
-        <label class="field">
-          <span>Estimat</span>
-          <span class="number-input"><input id="estimate" name="estimate" type="number" min="0.25" step="0.25" placeholder="4" required /><span>timer</span></span>
-        </label>
-
-        <div class="completion-panel">
-          <label class="check-row">
-            <input id="completed" name="completed" type="checkbox" />
-            <span><strong>Opgaven er færdig</strong></span>
-          </label>
-          <div id="actual-fields" class="actual-fields" hidden>
-            <label class="field">
-              <span>Faktisk tid</span>
-              <span class="number-input"><input id="actual" name="actual" type="number" min="0.25" step="0.25" placeholder="5.5" /><span>timer</span></span>
-            </label>
-            <label class="field">
-              <span>Afsluttet</span>
-              <input id="completed-at" name="completedAt" type="date" />
-            </label>
-          </div>
+      <form id="time-form" novalidate>
+        <span class="field-label" id="estimate-label">Estimat (timer)</span>
+        <div class="stepper">
+          <button type="button" class="step" data-target="estimate" data-step="-0.5" aria-label="Mindre estimat">−</button>
+          <input id="estimate" name="estimate" type="number" min="0.25" step="0.25" placeholder="–" aria-labelledby="estimate-label" required />
+          <button type="button" class="step" data-target="estimate" data-step="0.5" aria-label="Større estimat">+</button>
+        </div>
+        <div class="presets" id="estimate-presets">
+          <button type="button" data-value="1">1</button>
+          <button type="button" data-value="2">2</button>
+          <button type="button" data-value="4">4</button>
+          <button type="button" data-value="6">6</button>
+          <button type="button" data-value="8">8</button>
         </div>
 
         <div class="completion-panel ignore-panel" id="ignore-panel" hidden>
@@ -37,6 +29,31 @@
             <input id="estimate-ignored" name="estimateIgnored" type="checkbox" />
             <span><strong>Ignorér manglende estimat</strong></span>
           </label>
+        </div>
+
+        <hr class="card-separator" />
+
+        <label class="toggle-row" id="completed-row">
+          <span>Færdig</span>
+          <span class="toggle-date" id="completed-date" hidden><span id="completed-date-text"></span> ▾<input id="completed-at" name="completedAt" type="date" aria-label="Afsluttet dato" /></span>
+          <span class="toggle"><input id="completed" name="completed" type="checkbox" /><i></i></span>
+        </label>
+
+        <div class="done-wrap" id="actual-fields" inert>
+          <div class="done-box">
+            <span class="field-label" id="actual-label">Faktisk tid (timer)</span>
+            <div class="stepper">
+              <button type="button" class="step" data-target="actual" data-step="-0.5" aria-label="Mindre faktisk tid">−</button>
+              <input id="actual" name="actual" type="number" min="0.25" step="0.25" placeholder="–" aria-labelledby="actual-label" />
+              <button type="button" class="step" data-target="actual" data-step="0.5" aria-label="Mere faktisk tid">+</button>
+            </div>
+            <div class="presets" id="actual-presets"></div>
+            <div class="time-bars" id="time-bars" hidden>
+              <div class="time-bar"><i id="estimate-bar"></i></div>
+              <div class="time-bar actual" id="actual-bar-track"><i id="actual-bar"></i></div>
+              <div class="time-legend"><span id="time-summary"></span><span id="time-delta"></span></div>
+            </div>
+          </div>
         </div>
 
         <p id="form-error" class="form-message error" role="alert" hidden></p>
