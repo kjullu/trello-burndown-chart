@@ -24,16 +24,16 @@ window.TrelloPowerUp.initialize({
     const preferences = normalizePreferences(storedPreferences);
     if (!preferences.showCardFrontBadges) return [];
     if (!data.estimate && preferences.remindMissingEstimate && !data.estimateIgnored) {
-      return [{ icon: badgeIcons.warning, text: 'Mangler estimat', color: preferences.warningColor, monochrome: false }];
+      return [{ icon: badgeIcons.warning, text: 'Mangler estimat', color: preferences.warningColor, monochrome: true }];
     }
     if (needsActualTime({ ...card, time: data })) {
-      return [{ icon: badgeIcons.warning, text: 'Mangler faktisk tid', color: preferences.warningColor, monochrome: false }];
+      return [{ icon: badgeIcons.warning, text: 'Mangler faktisk tid', color: preferences.warningColor, monochrome: true }];
     }
     if (!data.estimate) return [];
     return [{
       icon: data.completedAt ? badgeIcons.completed : badgeIcons.active,
       text: data.completedAt ? `${formatHours(data.actual)} / ${formatHours(data.estimate)}` : formatHours(data.estimate),
-      monochrome: false,
+      monochrome: true,
       color: data.completedAt ? preferences.completedColor : preferences.activeColor,
     }];
   },
