@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, cardSprintId, currentSprint, formatSprintRange, nextSprintDraft, normalizeSprintBoard, sprintError, sprintStatus, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
+import { addDays, setEstimateFrom, cardSprintId, currentSprint, formatSprintRange, nextSprintDraft, normalizeSprintBoard, sprintError, sprintStatus, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('keeps an explicitly empty estimate history empty', () => {
@@ -432,5 +432,13 @@ describe('sprint ending on a weekend', () => {
     const result = buildBurndown(cards, { startDate: '2026-10-26', endDate: '2026-11-01' }, '2026-11-04');
     expect(result.points.at(-1)).toMatchObject({ date: '2026-10-30', actual: 0 });
     expect(result.points.at(-2).actual).toBe(27.5);
+  });
+});
+
+describe('setEstimateFrom', () => {
+  it('moves the estimate to an earlier date and drops later changes', () => {
+    const history = [{ date: '2026-11-04', estimate: 28 }];
+    expect(setEstimateFrom(history, '2026-10-26', 30)).toEqual([{ date: '2026-10-26', estimate: 30 }]);
+    expect(setEstimateFrom([{ date: null, estimate: 5 }], '2026-10-26', 8)).toEqual([{ date: null, estimate: 5 }, { date: '2026-10-26', estimate: 8 }]);
   });
 });

@@ -102,6 +102,12 @@ export function recordEstimateChange(history, dateKey, nextEstimate) {
   return normalizeEstimateHistory(entries);
 }
 
+// Sets the estimate from a chosen date. Changes recorded after that date are replaced.
+export function setEstimateFrom(history, dateKey, nextEstimate) {
+  const earlier = (Array.isArray(history) ? history : []).filter((entry) => entry.date === null || entry.date < dateKey);
+  return recordEstimateChange(earlier, dateKey, nextEstimate);
+}
+
 // A card registered after it was finished needs its estimate in place on the completion day.
 export function backfillEstimate(history, dateKey, nextEstimate) {
   const estimate = positiveNumber(nextEstimate);
