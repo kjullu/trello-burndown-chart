@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, backfillEstimate, cardSprintId, currentSprint, defaultSprintDates, formatSprintRange, localDateKey, normalizeSprintBoard, sprintStatus, normalizePreferences, normalizeTimeData, recordEstimateChange } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, backfillEstimate, cardSprintId, currentSprint, defaultSprintDates, formatSprintRange, localDateKey, normalizeSprintBoard, sprintStatus, normalizePreferences, normalizeTimeData, setEstimateFrom } from './model.js';
 
 const t = window.TrelloPowerUp.iframe();
 const form = document.querySelector('#time-form');
@@ -13,6 +13,8 @@ const error = document.querySelector('#form-error');
 const completedRow = document.querySelector('#completed-row');
 const completedDate = document.querySelector('#completed-date');
 const completedDateText = document.querySelector('#completed-date-text');
+const estimateDate = document.querySelector('#estimate-date');
+const estimateDateText = document.querySelector('#estimate-date-text');
 const estimatePresets = document.querySelector('#estimate-presets');
 const actualPresets = document.querySelector('#actual-presets');
 const bars = document.querySelector('#time-bars');
@@ -76,15 +78,17 @@ function selectSprint(index) {
   limitCompletionDate();
 }
 
-// Keep the completion date inside the chosen sprint, so the card burns down in that sprint.
+// Keep both dates inside the chosen sprint, so the card adds and burns down in that sprint.
 function limitCompletionDate() {
   const sprint = sprintOptions[sprintIndex]?.sprint;
   const today = localDateKey();
   const max = sprint && sprint.endDate < today ? sprint.endDate : today;
-  completedAt.min = sprint ? sprint.startDate : '';
-  completedAt.max = max;
-  if (completedAt.value > max) completedAt.value = max;
-  if (completedAt.min && completedAt.value && completedAt.value < completedAt.min) completedAt.value = completedAt.min;
+  for (const input of [completedAt, estimateDate]) {
+    input.min = sprint ? sprint.startDate : '';
+    input.max = max;
+    if (input.value > max) input.value = max;
+    if (input.min && input.value && input.value < input.min) input.value = input.min;
+  }
   renderTime();
 }
 
@@ -160,6 +164,7 @@ function renderTime() {
     delta.textContent = Math.abs(difference) < 0.01 ? 'Præcis som estimeret' : `${formatHours(Math.abs(difference))} t ${difference > 0 ? 'over' : 'under'}`;
   }
   completedDateText.textContent = prettyDate(completedAt.value);
+  estimateDateText.textContent = estimateDate.value === localDateKey() ? 'i dag' : prettyDate(estimateDate.value);
 }
 
 function showCompletionFields() {
@@ -197,6 +202,10 @@ async function initialize() {
   completed.checked = Boolean(data.completedAt || card.dueComplete);
   actual.value = data.actual || (preferences.copyEstimateToActual && completed.checked ? data.estimate || preferences.defaultEstimate : '') || '';
   completedAt.value = data.completedAt || localDateKey();
+  estimateDate.value = localDateKey();
+  // New work on a sprint that already ended most likely belonged to it from the start.
+  const chosen = sprintOptions[sprintIndex]?.sprint;
+  if (chosen && chosen.endDate < estimateDate.value && !data.estimate) estimateDate.value = chosen.startDate;
   limitCompletionDate();
   syncIgnoreState();
   showCompletionFields();
@@ -218,7 +227,14 @@ new ResizeObserver(() => {
 completed.addEventListener('change', showCompletionFields);
 form.addEventListener('input', renderTime);
 completedAt.addEventListener('change', renderTime);
+estimateDate.addEventListener('change', renderTime);
+document.querySelector('#estimate-date-toggle').addEventListener('click', (event) => {
+  if (event.target === estimateDate) return;
+  try { estimateDate.showPicker(); } catch { estimateDate.focus(); }
+});
 completedDate.addEventListener('click', (event) => {
+  // A click on the hidden date input opens the native picker. showPicker() is blocked in Trello's cross-origin iframe.
+  if (event.target === completedAt) return;
   event.preventDefault();
   try { completedAt.showPicker(); } catch { completedAt.focus(); }
 });
@@ -246,10 +262,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   error.hidden = true;
   const savedOn = localDateKey();
-  let history = recordEstimateChange(storedHistory, savedOn, estimate.value);
-  // An estimate added after its sprint ended still belongs to that sprint's backlog.
-  const sprint = sprintOptions[sprintIndex]?.sprint;
-  if (sprint && sprint.endDate < savedOn) history = backfillEstimate(history, sprint.startDate, estimate.value);
+  const history = setEstimateFrom(storedHistory, estimateDate.value || savedOn, estimate.value);
   const data = normalizeTimeData({
     estimate: estimate.value,
     actual: completed.checked ? actual.value : null,

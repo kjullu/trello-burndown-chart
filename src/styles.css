@@ -140,6 +140,8 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .sprint-list button[aria-selected='true'] { color: var(--blue); font-weight: 700; background: var(--blue-soft); }
 .sprint-list small { color: var(--muted); font: 400 11px 'DM Mono', monospace; }
 .sprint-list button[aria-selected='true'] small { color: var(--blue); }
+.estimate-date-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.estimate-date-row .toggle-date { margin-right: -6px; }
 .card-form-shell .sprint-separator { margin-top: 14px; }
 .card-form-shell .estimate-heading { margin-top: 14px; }
 .card-form-shell .form-actions .button-primary { flex: 1; }

@@ -102,6 +102,12 @@ export function recordEstimateChange(history, dateKey, nextEstimate) {
   return normalizeEstimateHistory(entries);
 }
 
+// Sets the estimate from a chosen date. Changes recorded after that date are replaced.
+export function setEstimateFrom(history, dateKey, nextEstimate) {
+  const earlier = (Array.isArray(history) ? history : []).filter((entry) => entry.date === null || entry.date < dateKey);
+  return recordEstimateChange(earlier, dateKey, nextEstimate);
+}
+
 // A card registered after it was finished needs its estimate in place on the completion day.
 export function backfillEstimate(history, dateKey, nextEstimate) {
   const estimate = positiveNumber(nextEstimate);
@@ -342,7 +348,10 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
       ideal: sprintIndex === -1
         ? null
         : sprintDays.length <= 1 ? 0 : baseline * (1 - sprintIndex / (sprintDays.length - 1)),
-      actual: date <= lastActualDay && date <= settings.endDate ? Math.max(0, remainingOn(date)) : null,
+      // A weekend at the end of the sprint has no later workday, so the last point absorbs it.
+      actual: date <= lastActualDay && date <= settings.endDate
+        ? Math.max(0, remainingOn(sprintIndex === sprintDays.length - 1 && lastActualDay > date ? lastActualDay : date))
+        : null,
       projection: null,
     };
   });
