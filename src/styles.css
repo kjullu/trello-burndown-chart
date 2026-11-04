@@ -200,6 +200,8 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .sprint-row.is-active span:last-child { color: var(--blue); font-weight: 700; }
 .settings-panel .sprint-form { flex-wrap: wrap; margin: 8px 0; border-radius: 6px; padding: 12px; background: var(--paper); }
 .sprint-form input[type='text'] { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; color: var(--ink); background: var(--surface); outline: none; }
+.sprint-form-error { flex-basis: 100%; margin: 0; color: var(--red); font-size: 0.875rem; }
+.sprint-form input[aria-invalid='true'] { border-color: var(--red); }
 .sprint-form-actions { display: flex; gap: 8px; margin-left: auto; }
 .button-danger { color: var(--red); }
 .add-sprint { width: 100%; margin-top: 8px; border: 1px dashed var(--line); border-radius: 6px; padding: 10px; color: var(--blue); background: none; font-size: 13px; font-weight: 700; }

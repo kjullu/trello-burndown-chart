@@ -89,6 +89,45 @@ for (const field of ['start-date', 'end-date']) {
   const picker = document.getElementById(`${field}-picker`);
   picker.addEventListener('change', () => { if (picker.value) input.value = formatDanishDate(picker.value); });
   input.addEventListener('change', () => { picker.value = parseDanishDate(input.value) || ''; });
+  picker.addEventListener('change', () => checkSprintForm());
+  input.addEventListener('input', () => checkSprintForm({ quietWhileTyping: true }));
+  input.addEventListener('change', () => checkSprintForm());
+}
+
+function sprintFromForm() {
+  return {
+    id: editingSprint.id,
+    name: document.querySelector('#sprint-name').value.trim() || editingSprint.name,
+    startDate: parseDanishDate(document.querySelector('#start-date').value),
+    endDate: parseDanishDate(document.querySelector('#end-date').value),
+  };
+}
+
+// Shows the sprint date problem right under the fields. While typing, an
+// unfinished date is not flagged yet; overlaps and reversed dates are.
+function checkSprintForm({ quietWhileTyping = false } = {}) {
+  if (!editingSprint) return null;
+  const sprint = sprintFromForm();
+  const incomplete = !sprint.startDate || !sprint.endDate;
+  const message = quietWhileTyping && incomplete ? null : sprintError(sprint, sprintBoard.sprints);
+  const box = document.querySelector('#sprint-form-error');
+  box.textContent = message || '';
+  box.hidden = !message;
+  const overlap = message && sprint.startDate && sprint.endDate
+    ? sprintBoard.sprints.find((other) => other.id !== sprint.id && sprint.startDate <= other.endDate && sprint.endDate >= other.startDate)
+    : null;
+  const fields = { 'start-date': sprint.startDate, 'end-date': sprint.endDate };
+  const bad = new Set();
+  if (message) {
+    for (const [field, date] of Object.entries(fields)) if (!date && !quietWhileTyping) bad.add(field);
+    if (!incomplete && sprint.startDate > sprint.endDate) Object.keys(fields).forEach((f) => bad.add(f));
+    if (overlap) {
+      for (const [field, date] of Object.entries(fields)) if (date >= overlap.startDate && date <= overlap.endDate) bad.add(field);
+      if (!bad.size) Object.keys(fields).forEach((f) => bad.add(f)); // covers the other sprint entirely
+    }
+  }
+  for (const field of Object.keys(fields)) document.getElementById(field).setAttribute('aria-invalid', String(bad.has(field)));
+  return message;
 }
 
 const taskGroups = [
@@ -258,6 +297,7 @@ function editSprint(sprint) {
   document.querySelector('#delete-sprint').hidden = isNew || sprintBoard.sprints.length <= 1;
   document.querySelector('#dashboard-error').hidden = true;
   sprintForm.hidden = false;
+  checkSprintForm();
   document.querySelector('#sprint-name').focus?.();
 }
 
@@ -388,19 +428,9 @@ document.querySelector('#delete-sprint').addEventListener('click', async () => {
 sprintForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!editingSprint) return;
-  const sprint = {
-    id: editingSprint.id,
-    name: document.querySelector('#sprint-name').value.trim() || editingSprint.name,
-    startDate: parseDanishDate(document.querySelector('#start-date').value),
-    endDate: parseDanishDate(document.querySelector('#end-date').value),
-  };
+  const sprint = sprintFromForm();
   const error = document.querySelector('#dashboard-error');
-  const message = sprintError(sprint, sprintBoard.sprints);
-  if (message) {
-    error.textContent = message;
-    error.hidden = false;
-    return;
-  }
+  if (checkSprintForm()) return;
   error.hidden = true;
   const others = sprintBoard.sprints.filter((other) => other.id !== sprint.id);
   const next = normalizeSprintBoard({ ...sprintBoard, sprints: [...others, sprint] });
