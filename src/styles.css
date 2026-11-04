@@ -123,9 +123,10 @@ select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(12, 102, 22
 .sprint-step:focus-visible, .sprint-slide:focus-visible, .sprint-list button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 .sprint-peek { position: relative; height: 56px; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22%, #000 78%, transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 22%, #000 78%, transparent 100%); }
 .sprint-track { position: absolute; top: 0; left: 0; display: flex; height: 100%; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.sprint-slide { display: grid; flex: 0 0 auto; place-content: center; height: 100%; border: 0; border-radius: 5px; padding: 0; color: var(--ink); background: none; line-height: 1.2; text-align: center; opacity: 0.45; transform: scale(0.85); transition: opacity 0.3s, transform 0.3s; }
+.sprint-slide { display: grid; flex: 0 0 auto; min-width: 0; overflow: hidden; align-content: center; height: 100%; border: 0; border-radius: 5px; padding: 0; color: var(--ink); background: none; line-height: 1.2; text-align: center; opacity: 0.45; transform: scale(0.85); transition: opacity 0.3s, transform 0.3s; }
 .sprint-slide.current { opacity: 1; transform: none; }
 .sprint-slide.current:hover, .sprint-slide.current[aria-expanded='true'] { background: #091e420f; }
+.sprint-slide b, .sprint-slide small { overflow: hidden; padding: 0 6px; text-overflow: ellipsis; }
 .sprint-slide b { font: 700 16px 'Space Grotesk', sans-serif; white-space: nowrap; }
 .sprint-slide small { color: var(--muted); font: 400 11px 'DM Mono', monospace; white-space: nowrap; }
 .sprint-slide.current.is-active small { color: var(--blue); }

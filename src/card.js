@@ -73,6 +73,19 @@ function buildSprintPicker(board, selectedId, todayKey) {
 function selectSprint(index) {
   sprintIndex = Math.max(0, Math.min(sprintOptions.length - 1, index));
   renderSprintPicker();
+  limitCompletionDate();
+}
+
+// Keep the completion date inside the chosen sprint, so the card burns down in that sprint.
+function limitCompletionDate() {
+  const sprint = sprintOptions[sprintIndex]?.sprint;
+  const today = localDateKey();
+  const max = sprint && sprint.endDate < today ? sprint.endDate : today;
+  completedAt.min = sprint ? sprint.startDate : '';
+  completedAt.max = max;
+  if (completedAt.value > max) completedAt.value = max;
+  if (completedAt.min && completedAt.value && completedAt.value < completedAt.min) completedAt.value = completedAt.min;
+  renderTime();
 }
 
 function setSprintList(open) {
@@ -184,6 +197,7 @@ async function initialize() {
   completed.checked = Boolean(data.completedAt || card.dueComplete);
   actual.value = data.actual || (preferences.copyEstimateToActual && completed.checked ? data.estimate || preferences.defaultEstimate : '') || '';
   completedAt.value = data.completedAt || localDateKey();
+  limitCompletionDate();
   syncIgnoreState();
   showCompletionFields();
 }
@@ -232,7 +246,10 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   error.hidden = true;
   const savedOn = localDateKey();
-  const history = recordEstimateChange(storedHistory, savedOn, estimate.value);
+  let history = recordEstimateChange(storedHistory, savedOn, estimate.value);
+  // An estimate added after its sprint ended still belongs to that sprint's backlog.
+  const sprint = sprintOptions[sprintIndex]?.sprint;
+  if (sprint && sprint.endDate < savedOn) history = backfillEstimate(history, sprint.startDate, estimate.value);
   const data = normalizeTimeData({
     estimate: estimate.value,
     actual: completed.checked ? actual.value : null,
