@@ -10,7 +10,18 @@
   <body class="popup-page">
     <main class="card-form-shell">
       <form id="time-form" novalidate>
-        <span class="field-label" id="estimate-label">Estimat (timer)</span>
+        <span class="field-label" id="sprint-label">Sprint</span>
+        <div class="sprint-box">
+          <div class="stepper sprint-stepper" role="group" aria-labelledby="sprint-label">
+            <button type="button" class="sprint-step" id="sprint-prev" aria-label="Forrige sprint">‹</button>
+            <div class="sprint-peek"><div class="sprint-track" id="sprint-track"></div></div>
+            <button type="button" class="sprint-step" id="sprint-next" aria-label="Næste sprint">›</button>
+          </div>
+          <div class="sprint-list-wrap" id="sprint-list-wrap" inert><div class="sprint-list" id="sprint-list" role="listbox" aria-labelledby="sprint-label"></div></div>
+        </div>
+        <hr class="card-separator sprint-separator" />
+
+        <span class="field-label estimate-heading" id="estimate-label">Estimat (timer)</span>
         <div class="stepper">
           <button type="button" class="step" data-target="estimate" data-step="-0.5" aria-label="Mindre estimat">−</button>
           <input id="estimate" name="estimate" type="number" min="0.25" step="0.25" placeholder="–" aria-labelledby="estimate-label" required />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
+import { addDays, cardSprintId, currentSprint, formatSprintRange, nextSprintDraft, normalizeSprintBoard, sprintError, sprintStatus, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('keeps an explicitly empty estimate history empty', () => {
@@ -376,5 +376,52 @@ describe('cards registered after completion', () => {
     const history = backfillEstimate(recordEstimateChange(stored, '2026-09-24', 12), '2026-09-21', 12);
     expect(estimateAsOf({ estimateHistory: history }, '2026-09-21')).toBe(8);
     expect(estimateAsOf({ estimateHistory: history }, '2026-09-24')).toBe(12);
+  });
+});
+
+describe('sprint board', () => {
+  const fallback = { startDate: '2026-11-01', endDate: '2026-11-14' };
+  const sprints = [
+    { id: 's1', name: 'Sprint 1', startDate: '2026-11-04', endDate: '2026-11-17' },
+    { id: 's2', name: 'Sprint 2', startDate: '2026-11-18', endDate: '2026-12-01' },
+  ];
+
+  it('turns the old single date pair into a first sprint that owns unassigned cards', () => {
+    const board = normalizeSprintBoard({ startDate: '2026-09-16', endDate: '2026-09-29' }, fallback);
+    expect(board).toEqual({ sprints: [{ id: 's1', name: 'Sprint 1', startDate: '2026-09-16', endDate: '2026-09-29' }], legacySprintId: 's1' });
+    expect(normalizeSprintBoard(null, fallback).sprints[0]).toMatchObject(fallback);
+  });
+
+  it('sorts sprints, drops broken ones and fills in missing names', () => {
+    const board = normalizeSprintBoard({ sprints: [sprints[1], { id: 's9', startDate: '2026-12-02', endDate: '2026-12-01' }, { ...sprints[0], name: ' ' }, sprints[1]], legacySprintId: 'gone' }, fallback);
+    expect(board.sprints.map((sprint) => [sprint.id, sprint.name])).toEqual([['s1', 'Sprint 1'], ['s2', 'Sprint 2']]);
+    expect(board.legacySprintId).toBeNull();
+  });
+
+  it('picks the running sprint, then the next planned one, then the latest', () => {
+    expect(currentSprint(sprints, '2026-11-20').id).toBe('s2');
+    expect(currentSprint(sprints, '2026-10-01').id).toBe('s1');
+    expect(currentSprint(sprints, '2027-01-01').id).toBe('s2');
+    expect(sprintStatus(sprints[0], '2026-11-20')).toBe('past');
+  });
+
+  it('keeps backlog and legacy cards apart', () => {
+    const board = { sprints, legacySprintId: 's1' };
+    expect(cardSprintId(normalizeTimeData({ estimate: 2 }), board)).toBe('s1');
+    expect(cardSprintId(normalizeTimeData({ estimate: 2, sprintId: null }), board)).toBeNull();
+    expect(cardSprintId(normalizeTimeData({ estimate: 2, sprintId: 's2' }), board)).toBe('s2');
+    expect(normalizeTimeData({ sprintId: '<bad>' }).sprintId).toBeUndefined();
+  });
+
+  it('drafts the next sprint right after the last one', () => {
+    expect(nextSprintDraft(sprints, '2026-11-20', 14)).toEqual({ id: 's3', name: 'Sprint 3', startDate: '2026-12-02', endDate: '2026-12-15' });
+    expect(nextSprintDraft(sprints, '2027-01-05', 7)).toMatchObject({ startDate: '2027-01-05', endDate: '2027-01-11' });
+  });
+
+  it('rejects overlapping or reversed sprints', () => {
+    expect(sprintError({ id: 's3', name: 'Sprint 3', startDate: '2026-12-01', endDate: '2026-12-10' }, sprints)).toBe('Datoerne overlapper Sprint 2.');
+    expect(sprintError({ id: 's2', name: 'Sprint 2', startDate: '2026-11-25', endDate: '2026-11-20' }, sprints)).toBe('Slutdatoen må ikke ligge før startdatoen.');
+    expect(sprintError({ ...sprints[1], endDate: '2026-12-05' }, sprints)).toBeNull();
+    expect(formatSprintRange(sprints[1])).toBe('18/11 - 1/12');
   });
 });

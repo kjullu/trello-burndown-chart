@@ -51,7 +51,14 @@ export function normalizeTimeData(value = {}) {
     completedAt,
     estimateIgnored: estimate ? false : value.estimateIgnored === true,
     estimateHistory,
+    sprintId: normalizeSprintId(value.sprintId),
   };
+}
+
+// undefined = never assigned (legacy card), null = backlog, string = sprint id.
+function normalizeSprintId(value) {
+  if (value === null) return null;
+  return typeof value === 'string' && /^[a-z0-9]{1,12}$/i.test(value) ? value : undefined;
 }
 
 function normalizeEstimateHistory(value) {
@@ -154,6 +161,78 @@ export function normalizeSprintSettings(value, fallback) {
   const endDate = normalizeDate(value?.endDate);
   if (startDate && endDate && startDate <= endDate) return { startDate, endDate };
   return { startDate: fallback.startDate, endDate: fallback.endDate };
+}
+
+export const SPRINT_LIMIT = 40;
+const SPRINT_NAME_LIMIT = 40;
+
+// Board settings hold every sprint. Older boards stored a single { startDate, endDate } pair;
+// that pair becomes the first sprint, and cards that were never assigned belong to it.
+export function normalizeSprintBoard(value, fallback) {
+  const normalizeDate = (date) => validDate(date) ? date.slice(0, 10) : parseDanishDate(date);
+  const seen = new Set();
+  const sprints = (Array.isArray(value?.sprints) ? value.sprints : [])
+    .map((sprint) => ({
+      id: normalizeSprintId(sprint?.id),
+      name: typeof sprint?.name === 'string' ? sprint.name.trim().slice(0, SPRINT_NAME_LIMIT) : '',
+      startDate: normalizeDate(sprint?.startDate),
+      endDate: normalizeDate(sprint?.endDate),
+    }))
+    .filter((sprint) => sprint.id && sprint.startDate && sprint.endDate && sprint.startDate <= sprint.endDate && !seen.has(sprint.id) && seen.add(sprint.id))
+    .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0))
+    .slice(0, SPRINT_LIMIT)
+    .map((sprint, index) => ({ ...sprint, name: sprint.name || `Sprint ${index + 1}` }));
+  if (sprints.length) {
+    const legacySprintId = normalizeSprintId(value.legacySprintId);
+    return { sprints, legacySprintId: legacySprintId && seen.has(legacySprintId) ? legacySprintId : null };
+  }
+  const dates = normalizeSprintSettings(value, fallback);
+  return { sprints: [{ id: 's1', name: 'Sprint 1', ...dates }], legacySprintId: 's1' };
+}
+
+export function sprintStatus(sprint, todayKey) {
+  if (sprint.endDate < todayKey) return 'past';
+  if (sprint.startDate > todayKey) return 'planned';
+  return 'active';
+}
+
+// The sprint running today, else the next planned one, else the latest.
+export function currentSprint(sprints, todayKey) {
+  return sprints.find((sprint) => sprintStatus(sprint, todayKey) === 'active')
+    ?? sprints.find((sprint) => sprintStatus(sprint, todayKey) === 'planned')
+    ?? sprints.at(-1)
+    ?? null;
+}
+
+export function cardSprintId(time, board) {
+  return time.sprintId === undefined ? board.legacySprintId ?? null : time.sprintId;
+}
+
+export function nextSprintDraft(sprints, todayKey, durationDays = DEFAULT_PREFERENCES.defaultSprintDays) {
+  const last = sprints.at(-1);
+  const startDate = last && last.endDate >= todayKey ? addDays(last.endDate, 1) : todayKey;
+  const ids = sprints.map((sprint) => Number(/^s(\d+)$/.exec(sprint.id)?.[1]) || 0);
+  return {
+    id: `s${Math.max(0, ...ids) + 1}`,
+    name: `Sprint ${sprints.length + 1}`,
+    startDate,
+    endDate: addDays(startDate, Math.max(1, durationDays) - 1),
+  };
+}
+
+// Returns an error message, or null when the sprint fits next to the others.
+export function sprintError(sprint, sprints) {
+  if (!validDate(sprint.startDate) || !validDate(sprint.endDate)) return 'Skriv gyldige datoer som dd/mm/åååå.';
+  if (sprint.startDate > sprint.endDate) return 'Slutdatoen må ikke ligge før startdatoen.';
+  const overlap = sprints.find((other) => other.id !== sprint.id && sprint.startDate <= other.endDate && sprint.endDate >= other.startDate);
+  if (overlap) return `Datoerne overlapper ${overlap.name}.`;
+  if (!sprints.some((other) => other.id === sprint.id) && sprints.length >= SPRINT_LIMIT) return `Et board kan højst have ${SPRINT_LIMIT} sprints.`;
+  return null;
+}
+
+export function formatSprintRange(sprint) {
+  const short = (dateKey) => `${Number(dateKey.slice(8, 10))}/${Number(dateKey.slice(5, 7))}`;
+  return `${short(sprint.startDate)} - ${short(sprint.endDate)}`;
 }
 
 export function localDateKey(date = new Date()) {

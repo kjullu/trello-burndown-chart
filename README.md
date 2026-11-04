@@ -49,7 +49,8 @@ Hvis knapperne ikke vises med det samme efter en opdatering, skal du vente på, 
 1. Åbn et Trello-kort.
 2. Vælg **Tid & afslutning** under Power-Ups.
 3. Indtast det forventede antal timer under **Estimat**.
-4. Vælg **Gem tid**.
+4. Vælg sprinten øverst i dialogen. Brug pilene, klik på en nabo, eller klik på den midterste sprint for at se dem alle. Nye kort starter i den sprint, der kører nu. **Backlog** betyder, at kortet ikke er med i nogen sprint.
+5. Vælg **Gem tid**.
 
 Estimatet vises som et blåt badge på kortet.
 
@@ -66,8 +67,9 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 ### Se burndown-grafen
 
 1. Vælg **Burndown** i boardets topmenu.
-2. Åbn **Sprintdatoer**, og vælg sprintens start- og slutdato.
-3. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid, velocity, effektivitet og en prognose for, hvornår arbejdet er færdigt.
+2. Åbn **Sprints** for at oprette sprints eller rette navn og datoer. **+ Ny sprint** starter dagen efter den sidste sprint og bruger standardlængden fra indstillingerne. Sprints må ikke overlappe.
+3. Skift sprint ved at klikke på sprintnavnet eller bruge pilene ‹ ›. Dashboardet åbner altid på den sprint, der kører nu.
+4. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid, velocity, effektivitet og en prognose for, hvornår arbejdet er færdigt.
 
 Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
 
@@ -162,7 +164,7 @@ npm run build
 Sprintline gemmer disse delte oplysninger:
 
 - Estimeret tid, faktisk tid, afslutningsdato og en kort historik over estimatændringer på det enkelte kort. Historikken bruges til at vise det korrekte resterende arbejde for hver dag, så fortidens grafpunkter ikke ændrer sig, når et estimat rettes.
-- Sprintens start- og slutdato på boardet.
+- Boardets sprints med navn, start- og slutdato, samt hvilken sprint hvert kort hører til. Kort fra før der kom flere sprints, hører til den første sprint.
 - Antal medarbejdere, arbejdstimer pr. dag og effektivitetsfaktor på boardet.
 
 Data gemmes via Trellos `pluginData` med synligheden `shared`. Det betyder, at medlemmer med adgang til kortet eller boardet kan læse Power-Up-dataene. Der sendes ingen tidsdata til GitHub Pages, Netlify, Vercel eller en ekstern database.

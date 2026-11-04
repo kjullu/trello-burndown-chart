@@ -11,22 +11,35 @@
     <main class="dashboard-shell">
       <header class="dashboard-header">
         <div>
-          <span class="eyebrow">Burndown</span>
-          <h1 id="board-title">Boardets sprint</h1>
+          <span class="eyebrow" id="board-title">Burndown</span>
+          <div class="sprint-switch">
+            <h1><button id="sprint-title" class="sprint-title" type="button" aria-haspopup="listbox" aria-expanded="false">Sprint</button></h1>
+            <button id="sprint-prev" class="nav-arrow" type="button" aria-label="Forrige sprint">‹</button>
+            <button id="sprint-next" class="nav-arrow" type="button" aria-label="Næste sprint">›</button>
+            <div id="sprint-menu" class="sprint-menu" role="listbox" aria-labelledby="sprint-title" hidden></div>
+          </div>
+          <p id="sprint-sub" class="sprint-sub"></p>
         </div>
         <div class="dashboard-actions">
           <button id="export-csv" class="button button-quiet" type="button">Eksportér CSV</button>
-          <button id="settings-toggle" class="button button-quiet" type="button" aria-expanded="false">Sprintdatoer</button>
+          <button id="settings-toggle" class="button button-quiet" type="button" aria-expanded="false">Sprints</button>
         </div>
       </header>
 
       <section id="settings-panel" class="settings-panel" hidden>
-        <form id="settings-form">
+        <div id="sprint-rows" class="sprint-rows"></div>
+        <form id="settings-form" class="sprint-form" hidden>
+          <div class="field"><label for="sprint-name">Navn</label><input id="sprint-name" type="text" maxlength="40" required /></div>
           <div class="field"><label for="start-date">Startdato</label><div class="date-field"><input id="start-date" type="text" inputmode="numeric" placeholder="dd/mm/åååå" required /><input id="start-date-picker" type="date" aria-label="Vælg startdato" tabindex="-1" /></div></div>
           <div class="field"><label for="end-date">Slutdato</label><div class="date-field"><input id="end-date" type="text" inputmode="numeric" placeholder="dd/mm/åååå" required /><input id="end-date-picker" type="date" aria-label="Vælg slutdato" tabindex="-1" /></div></div>
-          <button class="button button-primary" type="submit">Gem datoer</button>
+          <div class="sprint-form-actions">
+            <button id="delete-sprint" class="button button-quiet button-danger" type="button">Slet</button>
+            <button id="cancel-sprint" class="button button-quiet" type="button">Annuller</button>
+            <button class="button button-primary" type="submit">Gem</button>
+          </div>
         </form>
-        <p class="helper-text">Arbejdsdage vises. Kort uden estimat tæller ikke med.</p>
+        <button id="add-sprint" class="add-sprint" type="button">+ Ny sprint</button>
+        <p class="helper-text">Klik på en sprint for at rette den. Vælg sprint på hvert kort under "Tid &amp; afslutning". Arbejdsdage vises, og kort uden estimat tæller ikke med.</p>
       </section>
 
       <section id="loading" class="loading-state"><span class="pulse-dot"></span><p>Samler timer fra boardet...</p></section>
@@ -64,8 +77,8 @@
       </section>
       <section id="empty-state" class="empty-state" hidden>
         <div class="empty-graph" aria-hidden="true"><span></span><span></span><span></span><i></i></div>
-        <h2>Grafen mangler timer</h2>
-        <p>Åbn et kort, vælg "Tid &amp; afslutning", og tilføj et estimat.</p>
+        <h2 id="empty-title">Grafen mangler timer</h2>
+        <p>Åbn et kort, vælg "Tid &amp; afslutning", vælg sprinten, og tilføj et estimat.</p>
       </section>
       <p id="dashboard-error" class="form-message error" role="alert" hidden></p>
     </main>
