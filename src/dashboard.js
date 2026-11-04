@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, defaultSprintDates, formatDanishDate, formatHours, localDateKey, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, workDayRange } from './model.js';
+import { BOARD_PREFERENCES_KEY, addDays, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, cardSprintId, currentSprint, defaultSprintDates, formatDanishDate, formatHours, formatSprintRange, localDateKey, needsActualTime, nextSprintDraft, normalizePreferences, normalizeSprintBoard, normalizeTimeData, parseDanishDate, sprintError, sprintStatus, workDayRange } from './model.js';
 import { renderChart } from './chart.js';
 import { createTrelloClient } from './trello-client.js';
 
@@ -45,6 +45,15 @@ let cards = [];
 let currentBurndown = null;
 let boardName = '';
 let preferences = normalizePreferences();
+let sprintBoard = null;
+let selectedSprintId = null;
+let editingSprint = null;
+const today = demoMode ? '2026-09-26' : localDateKey();
+const sprintTitle = document.querySelector('#sprint-title');
+const sprintMenu = document.querySelector('#sprint-menu');
+const sprintSwitch = document.querySelector('.sprint-switch');
+const sprintForm = document.querySelector('#settings-form');
+const STATUS_LABELS = { past: 'afsluttet', active: 'aktiv', planned: 'planlagt' };
 
 function filenamePart(value) {
   return value
@@ -62,7 +71,7 @@ function downloadCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${filenamePart(boardName)}-burndown-${currentBurndown.startDate}-${currentBurndown.endDate}.csv`;
+  link.download = `${filenamePart(boardName)}-${filenamePart(currentBurndown.name)}-burndown-${currentBurndown.startDate}-${currentBurndown.endDate}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -174,18 +183,111 @@ function renderVerdict(result, settings) {
   text.textContent = `Med det nuværende tempo bliver sprinten færdig ${formatDate(result.projectedEndDate)}, inden slutdatoen ${formatDate(settings.endDate)}.`;
 }
 
-function render(settings, preferences) {
-  const today = demoMode ? '2026-09-26' : localDateKey();
-  const result = buildBurndown(cards, settings, today, preferences);
-  currentBurndown = { ...result, ...settings };
-  for (const [field, date] of [['start-date', settings.startDate], ['end-date', settings.endDate]]) {
+function selectedSprint() {
+  return sprintBoard.sprints.find((sprint) => sprint.id === selectedSprintId) ?? sprintBoard.sprints[0];
+}
+
+function sprintCards(sprint) {
+  return cards.filter((card) => cardSprintId(card.time, sprintBoard) === sprint.id);
+}
+
+function sprintSubtitle(sprint) {
+  const status = sprintStatus(sprint, today);
+  if (status !== 'active') return `${formatSprintRange(sprint)} · ${STATUS_LABELS[status]}`;
+  const left = workDayRange(addDays(today, 1), sprint.endDate).length;
+  return `${formatSprintRange(sprint)} · ${left} ${left === 1 ? 'arbejdsdag' : 'arbejdsdage'} tilbage`;
+}
+
+function renderSprintSwitch() {
+  const sprint = selectedSprint();
+  const index = sprintBoard.sprints.indexOf(sprint);
+  sprintTitle.textContent = sprint.name;
+  document.querySelector('#sprint-sub').textContent = sprintSubtitle(sprint);
+  document.querySelector('#sprint-prev').disabled = index <= 0;
+  document.querySelector('#sprint-next').disabled = index >= sprintBoard.sprints.length - 1;
+  sprintMenu.replaceChildren(...sprintBoard.sprints.map((option) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.setAttribute('role', 'option');
+    item.setAttribute('aria-selected', String(option.id === sprint.id));
+    const name = document.createElement('span');
+    name.textContent = option.name;
+    const detail = document.createElement('small');
+    detail.textContent = sprintStatus(option, today) === 'active' ? 'nu' : formatSprintRange(option);
+    item.append(name, detail);
+    item.addEventListener('click', () => { setSprintMenu(false); showSprint(option.id); sprintTitle.focus?.(); });
+    return item;
+  }));
+  document.querySelector('#sprint-rows').replaceChildren(...sprintBoard.sprints.map((option) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    const status = sprintStatus(option, today);
+    row.className = `sprint-row${status === 'active' ? ' is-active' : ''}`;
+    const name = document.createElement('b');
+    name.textContent = option.name;
+    const dates = document.createElement('small');
+    dates.textContent = `${formatDanishDate(option.startDate)} – ${formatDanishDate(option.endDate)}`;
+    const label = document.createElement('span');
+    label.textContent = STATUS_LABELS[status];
+    row.append(name, dates, label);
+    row.addEventListener('click', () => editSprint(option));
+    return row;
+  }));
+}
+
+function setSprintMenu(open) {
+  sprintMenu.hidden = !open;
+  sprintTitle.setAttribute('aria-expanded', String(open));
+}
+
+function showSprint(id) {
+  selectedSprintId = id;
+  renderSprintSwitch();
+  const sprint = selectedSprint();
+  render({ startDate: sprint.startDate, endDate: sprint.endDate }, preferences, sprintCards(sprint), sprint);
+}
+
+function editSprint(sprint) {
+  editingSprint = sprint;
+  document.querySelector('#sprint-name').value = sprint.name;
+  for (const [field, date] of [['start-date', sprint.startDate], ['end-date', sprint.endDate]]) {
     document.getElementById(field).value = formatDanishDate(date);
     document.getElementById(`${field}-picker`).value = date;
   }
+  const isNew = !sprintBoard.sprints.some((other) => other.id === sprint.id);
+  document.querySelector('#delete-sprint').hidden = isNew || sprintBoard.sprints.length <= 1;
+  document.querySelector('#dashboard-error').hidden = true;
+  sprintForm.hidden = false;
+  document.querySelector('#sprint-name').focus?.();
+}
+
+function closeSprintForm() {
+  editingSprint = null;
+  sprintForm.hidden = true;
+}
+
+async function saveSprintBoard(next, failMessage) {
+  const error = document.querySelector('#dashboard-error');
+  try {
+    await t.set('board', 'shared', BOARD_SETTINGS_KEY, next);
+  } catch (reason) {
+    error.textContent = failMessage;
+    error.hidden = false;
+    console.error(reason);
+    return false;
+  }
+  sprintBoard = next;
+  return true;
+}
+
+function render(settings, preferences, sprintCardList, sprint) {
+  const result = buildBurndown(sprintCardList, settings, today, preferences);
+  currentBurndown = { ...result, ...settings, name: sprint.name };
   document.querySelector('#loading').hidden = true;
   if (!result.tracked.length) {
     document.querySelector('#dashboard-content').hidden = true;
     document.querySelector('#empty-state').hidden = false;
+    document.querySelector('#empty-title').textContent = `${sprint.name} har ingen timer endnu`;
     return;
   }
   document.querySelector('#empty-state').hidden = true;
@@ -231,9 +333,9 @@ async function load() {
   })));
   preferences = normalizePreferences(storedPreferences);
   const defaults = defaultSprintDates(new Date(), preferences.defaultSprintDays);
-  const settings = normalizeSprintSettings(storedSettings, defaults);
+  sprintBoard = normalizeSprintBoard(storedSettings, defaults);
   try {
-    render(settings, preferences);
+    showSprint(currentSprint(sprintBoard.sprints, today).id);
   } catch (reason) {
     const error = document.querySelector('#dashboard-error');
     error.textContent = 'Dashboardet kunne ikke vises. Kontrollér sprintdatoerne og prøv igen.';
@@ -249,38 +351,65 @@ settingsToggle.addEventListener('click', () => {
 
 document.querySelector('#export-csv').addEventListener('click', downloadCsv);
 
-document.querySelector('#settings-form').addEventListener('submit', async (event) => {
+sprintTitle.addEventListener('click', () => setSprintMenu(sprintMenu.hidden));
+// Keep focus inside the switch while picking, so focusout does not close the menu first.
+sprintMenu.addEventListener('mousedown', (event) => event.preventDefault());
+sprintSwitch.addEventListener('focusout', (event) => {
+  if (!sprintSwitch.contains?.(event.relatedTarget)) setSprintMenu(false);
+});
+sprintSwitch.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || sprintMenu.hidden) return;
+  setSprintMenu(false);
+  sprintTitle.focus();
+});
+for (const [id, step] of [['#sprint-prev', -1], ['#sprint-next', 1]]) {
+  document.querySelector(id).addEventListener('click', () => {
+    const index = sprintBoard.sprints.indexOf(selectedSprint()) + step;
+    if (sprintBoard.sprints[index]) showSprint(sprintBoard.sprints[index].id);
+  });
+}
+
+document.querySelector('#add-sprint').addEventListener('click', () => {
+  editSprint(nextSprintDraft(sprintBoard.sprints, today, preferences.defaultSprintDays));
+});
+document.querySelector('#cancel-sprint').addEventListener('click', closeSprintForm);
+document.querySelector('#delete-sprint').addEventListener('click', async () => {
+  if (!editingSprint || sprintBoard.sprints.length <= 1) return;
+  const cardCount = sprintCards(editingSprint).length;
+  const warning = cardCount ? ` ${cardCount} kort flyttes til backlog.` : '';
+  if (!window.confirm(`Slet ${editingSprint.name}?${warning}`)) return;
+  const removedId = editingSprint.id;
+  const next = { ...sprintBoard, sprints: sprintBoard.sprints.filter((sprint) => sprint.id !== removedId) };
+  if (!await saveSprintBoard(next, 'Sprinten kunne ikke slettes. Prøv igen.')) return;
+  closeSprintForm();
+  showSprint(selectedSprintId === removedId ? currentSprint(sprintBoard.sprints, today).id : selectedSprintId);
+});
+
+sprintForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const settings = {
+  if (!editingSprint) return;
+  const sprint = {
+    id: editingSprint.id,
+    name: document.querySelector('#sprint-name').value.trim() || editingSprint.name,
     startDate: parseDanishDate(document.querySelector('#start-date').value),
     endDate: parseDanishDate(document.querySelector('#end-date').value),
   };
   const error = document.querySelector('#dashboard-error');
-  if (!settings.startDate || !settings.endDate) {
-    error.textContent = 'Skriv gyldige datoer som dd/mm/åååå.';
-    error.hidden = false;
-    return;
-  }
-  if (settings.startDate > settings.endDate) {
-    error.textContent = 'Slutdatoen må ikke ligge før startdatoen.';
+  const message = sprintError(sprint, sprintBoard.sprints);
+  if (message) {
+    error.textContent = message;
     error.hidden = false;
     return;
   }
   error.hidden = true;
+  const others = sprintBoard.sprints.filter((other) => other.id !== sprint.id);
+  const next = normalizeSprintBoard({ ...sprintBoard, sprints: [...others, sprint] });
+  if (!await saveSprintBoard(next, 'Sprinten kunne ikke gemmes. Prøv igen.')) return;
+  closeSprintForm();
   try {
-    await t.set('board', 'shared', BOARD_SETTINGS_KEY, settings);
+    showSprint(sprint.id);
   } catch (reason) {
-    error.textContent = 'Sprintdatoerne kunne ikke gemmes. Prøv igen.';
-    error.hidden = false;
-    console.error(reason);
-    return;
-  }
-  settingsPanel.hidden = true;
-  settingsToggle.setAttribute('aria-expanded', 'false');
-  try {
-    render(settings, preferences);
-  } catch (reason) {
-    error.textContent = 'Datoerne blev gemt, men dashboardet kunne ikke vises. Genåbn dashboardet og prøv igen.';
+    error.textContent = 'Sprinten blev gemt, men dashboardet kunne ikke vises. Genåbn dashboardet og prøv igen.';
     error.hidden = false;
     console.error(reason);
   }

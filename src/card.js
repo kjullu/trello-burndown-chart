@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, backfillEstimate, localDateKey, normalizePreferences, normalizeTimeData, recordEstimateChange } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, backfillEstimate, cardSprintId, currentSprint, defaultSprintDates, formatSprintRange, localDateKey, normalizeSprintBoard, sprintStatus, normalizePreferences, normalizeTimeData, recordEstimateChange } from './model.js';
 
 const t = window.TrelloPowerUp.iframe();
 const form = document.querySelector('#time-form');
@@ -20,6 +20,96 @@ const ACTUAL_MULTIPLIERS = [0.5, 0.75, 1, 1.5, 2];
 let preferences = DEFAULT_PREFERENCES;
 let storedEstimate = null;
 let storedHistory = [];
+let sprintOptions = [];
+let sprintIndex = 0;
+let sprintListOpen = false;
+const sprintTrack = document.querySelector('#sprint-track');
+const sprintPeek = sprintTrack.parentElement;
+const sprintListWrap = document.querySelector('#sprint-list-wrap');
+const sprintList = document.querySelector('#sprint-list');
+const sprintPrev = document.querySelector('#sprint-prev');
+const sprintNext = document.querySelector('#sprint-next');
+
+function sprintDetail(option) {
+  if (!option.sprint) return 'ingen sprint';
+  return option.active ? `nu · ${formatSprintRange(option.sprint)}` : formatSprintRange(option.sprint);
+}
+
+function buildSprintPicker(board, selectedId, todayKey) {
+  sprintOptions = [{ id: null, name: 'Backlog', sprint: null, active: false }, ...board.sprints.map((sprint) => ({
+    id: sprint.id, name: sprint.name, sprint, active: sprintStatus(sprint, todayKey) === 'active',
+  }))];
+  sprintIndex = Math.max(0, sprintOptions.findIndex((option) => option.id === selectedId));
+  sprintTrack.replaceChildren(...sprintOptions.map((option, index) => {
+    const slide = document.createElement('button');
+    slide.type = 'button';
+    slide.className = `sprint-slide${option.active ? ' is-active' : ''}`;
+    const name = document.createElement('b');
+    name.textContent = option.name;
+    const detail = document.createElement('small');
+    detail.textContent = sprintDetail(option);
+    slide.append(name, detail);
+    slide.addEventListener('click', () => {
+      if (index === sprintIndex) setSprintList(!sprintListOpen);
+      else selectSprint(index);
+    });
+    return slide;
+  }));
+  sprintList.replaceChildren(...sprintOptions.map((option, index) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.setAttribute('role', 'option');
+    const name = document.createElement('span');
+    name.textContent = option.name;
+    const detail = document.createElement('small');
+    detail.textContent = option.active ? 'nu' : option.sprint ? formatSprintRange(option.sprint) : '';
+    item.append(name, detail);
+    item.addEventListener('click', () => { selectSprint(index); setSprintList(false); });
+    return item;
+  }));
+  renderSprintPicker();
+}
+
+function selectSprint(index) {
+  sprintIndex = Math.max(0, Math.min(sprintOptions.length - 1, index));
+  renderSprintPicker();
+}
+
+function setSprintList(open) {
+  sprintListOpen = open;
+  sprintListWrap.classList.toggle('open', open);
+  sprintListWrap.inert = !open;
+  renderSprintPicker();
+}
+
+function renderSprintPicker() {
+  const width = sprintPeek.clientWidth;
+  const slideWidth = width * 0.56;
+  [...sprintTrack.children].forEach((slide, index) => {
+    const current = index === sprintIndex;
+    slide.style.width = `${slideWidth}px`;
+    slide.classList.toggle('current', current);
+    slide.tabIndex = current ? 0 : -1;
+    if (current) slide.setAttribute('aria-expanded', String(sprintListOpen));
+    else slide.removeAttribute('aria-expanded');
+  });
+  sprintTrack.style.transform = `translateX(${width / 2 - slideWidth / 2 - sprintIndex * slideWidth}px)`;
+  [...sprintList.children].forEach((item, index) => item.setAttribute('aria-selected', String(index === sprintIndex)));
+  sprintPrev.disabled = sprintIndex === 0;
+  sprintNext.disabled = sprintIndex === sprintOptions.length - 1;
+}
+
+sprintPrev.addEventListener('click', () => selectSprint(sprintIndex - 1));
+sprintNext.addEventListener('click', () => selectSprint(sprintIndex + 1));
+document.querySelector('.sprint-stepper').addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowLeft') selectSprint(sprintIndex - 1);
+  else if (event.key === 'ArrowRight') selectSprint(sprintIndex + 1);
+  else if (event.key === 'Escape' && sprintListOpen) setSprintList(false);
+  else return;
+  event.preventDefault();
+  event.stopPropagation();
+});
+new ResizeObserver(() => renderSprintPicker()).observe(sprintPeek);
 
 const hours = (value) => {
   const number = Number.parseFloat(String(value).replace(',', '.'));
@@ -73,13 +163,20 @@ function showCompletionFields() {
 }
 
 async function initialize() {
-  const [card, stored, storedPreferences] = await Promise.all([
+  const [card, stored, storedPreferences, storedSprints] = await Promise.all([
     t.card('dueComplete'),
     t.get('card', 'shared', CARD_DATA_KEY, {}),
     t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
+    t.get('board', 'shared', BOARD_SETTINGS_KEY, null),
   ]);
   const data = normalizeTimeData(stored);
   preferences = normalizePreferences(storedPreferences);
+  const today = localDateKey();
+  const board = normalizeSprintBoard(storedSprints, defaultSprintDates(new Date(), preferences.defaultSprintDays));
+  // A card that was never registered starts in the sprint running now.
+  const hasTime = Boolean(data.estimate || data.completedAt || data.estimateIgnored);
+  const selectedId = data.sprintId !== undefined || hasTime ? cardSprintId(data, board) : currentSprint(board.sprints, today)?.id ?? null;
+  buildSprintPicker(board, selectedId, today);
   storedEstimate = data.estimate;
   storedHistory = data.estimateHistory;
   ignored.checked = Boolean(data.estimateIgnored);
@@ -142,6 +239,7 @@ form.addEventListener('submit', async (event) => {
     completedAt: completed.checked ? completedAt.value : null,
     estimateIgnored: ignored.checked,
     estimateHistory: completed.checked ? backfillEstimate(history, completedAt.value, estimate.value) : history,
+    sprintId: sprintOptions[sprintIndex]?.id ?? null,
   });
   if ((!data.estimate && !ignored.checked) || (completed.checked && (!data.actual || !data.completedAt))) {
     error.textContent = 'Udfyld estimatet og den faktiske tid med tal over 0.';
