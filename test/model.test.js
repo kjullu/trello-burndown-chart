@@ -425,3 +425,12 @@ describe('sprint board', () => {
     expect(formatSprintRange(sprints[1])).toBe('18/11 - 1/12');
   });
 });
+
+describe('sprint ending on a weekend', () => {
+  it('shows work finished on the final Sunday on the last workday point', () => {
+    const cards = [{ id: 'a', time: { estimate: 27.5, actual: 28, completedAt: '2026-11-01', estimateHistory: [{ date: '2026-10-26', estimate: 27.5 }] } }];
+    const result = buildBurndown(cards, { startDate: '2026-10-26', endDate: '2026-11-01' }, '2026-11-04');
+    expect(result.points.at(-1)).toMatchObject({ date: '2026-10-30', actual: 0 });
+    expect(result.points.at(-2).actual).toBe(27.5);
+  });
+});

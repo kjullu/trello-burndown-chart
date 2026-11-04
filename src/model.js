@@ -342,7 +342,10 @@ export function buildBurndown(cards, settings, todayKey = localDateKey(), capaci
       ideal: sprintIndex === -1
         ? null
         : sprintDays.length <= 1 ? 0 : baseline * (1 - sprintIndex / (sprintDays.length - 1)),
-      actual: date <= lastActualDay && date <= settings.endDate ? Math.max(0, remainingOn(date)) : null,
+      // A weekend at the end of the sprint has no later workday, so the last point absorbs it.
+      actual: date <= lastActualDay && date <= settings.endDate
+        ? Math.max(0, remainingOn(sprintIndex === sprintDays.length - 1 && lastActualDay > date ? lastActualDay : date))
+        : null,
       projection: null,
     };
   });

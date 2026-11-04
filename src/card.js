@@ -219,6 +219,8 @@ completed.addEventListener('change', showCompletionFields);
 form.addEventListener('input', renderTime);
 completedAt.addEventListener('change', renderTime);
 completedDate.addEventListener('click', (event) => {
+  // A click on the hidden date input opens the native picker. showPicker() is blocked in Trello's cross-origin iframe.
+  if (event.target === completedAt) return;
   event.preventDefault();
   try { completedAt.showPicker(); } catch { completedAt.focus(); }
 });
