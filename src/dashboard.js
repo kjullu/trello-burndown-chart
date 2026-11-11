@@ -98,6 +98,7 @@ function sprintFromForm() {
   return {
     id: editingSprint.id,
     name: document.querySelector('#sprint-name').value.trim() || editingSprint.name,
+    tag: document.querySelector('#sprint-tag').value.trim() || editingSprint.tag,
     startDate: parseDanishDate(document.querySelector('#start-date').value),
     endDate: parseDanishDate(document.querySelector('#end-date').value),
   };
@@ -289,6 +290,7 @@ function showSprint(id) {
 function editSprint(sprint) {
   editingSprint = sprint;
   document.querySelector('#sprint-name').value = sprint.name;
+  document.querySelector('#sprint-tag').value = sprint.tag ?? '';
   for (const [field, date] of [['start-date', sprint.startDate], ['end-date', sprint.endDate]]) {
     document.getElementById(field).value = formatDanishDate(date);
     document.getElementById(`${field}-picker`).value = date;
