@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, CARD_DATA_KEY, formatHours, needsActualTime, normalizePreferences, normalizeTimeData } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, cardSprintId, defaultSprintDates, formatHours, needsActualTime, normalizePreferences, normalizeSprintBoard, normalizeTimeData } from './model.js';
 
 const icon = new URL('./icon.png?v=2', window.location.href).href;
 const badgeIcons = {
@@ -15,13 +15,18 @@ window.TrelloPowerUp.initialize({
     callback: (t) => t.popup({ title: 'Registrér faktisk tid', url: './card.html?v=9', height: 350 }),
   }],
   'card-badges': async (t) => {
-    const [stored, card, storedPreferences] = await Promise.all([
+    const [stored, card, storedPreferences, storedSprints] = await Promise.all([
       t.get('card', 'shared', CARD_DATA_KEY, {}),
       t.card('dueComplete'),
       t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
+      t.get('board', 'shared', BOARD_SETTINGS_KEY, null),
     ]);
     const data = normalizeTimeData(stored);
     const preferences = normalizePreferences(storedPreferences);
+    const board = normalizeSprintBoard(storedSprints, defaultSprintDates(new Date(), preferences.defaultSprintDays));
+    const sprintId = cardSprintId(data, board);
+    const tag = board.sprints.find((sprint) => sprint.id === sprintId)?.tag;
+    const withTag = (text) => (tag ? `${tag} · ${text}` : text);
     if (!preferences.showCardFrontBadges) return [];
     if (!data.estimate && preferences.remindMissingEstimate && !data.estimateIgnored) {
       return [{ icon: badgeIcons.warning, text: 'Mangler estimat', color: preferences.warningColor, monochrome: true }];
@@ -32,19 +37,24 @@ window.TrelloPowerUp.initialize({
     if (!data.estimate) return [];
     return [{
       icon: data.completedAt ? badgeIcons.completed : badgeIcons.active,
-      text: data.completedAt ? `${formatHours(data.actual)} / ${formatHours(data.estimate)}` : formatHours(data.estimate),
+      text: withTag(data.completedAt ? `${formatHours(data.actual)} / ${formatHours(data.estimate)}` : formatHours(data.estimate)),
       monochrome: true,
       color: data.completedAt ? preferences.completedColor : preferences.activeColor,
     }];
   },
   'card-detail-badges': async (t) => {
-    const [stored, card, storedPreferences] = await Promise.all([
+    const [stored, card, storedPreferences, storedSprints] = await Promise.all([
       t.get('card', 'shared', CARD_DATA_KEY, {}),
       t.card('dueComplete'),
       t.get('board', 'shared', BOARD_PREFERENCES_KEY, {}),
+      t.get('board', 'shared', BOARD_SETTINGS_KEY, null),
     ]);
     const data = normalizeTimeData(stored);
     const preferences = normalizePreferences(storedPreferences);
+    const board = normalizeSprintBoard(storedSprints, defaultSprintDates(new Date(), preferences.defaultSprintDays));
+    const sprintId = cardSprintId(data, board);
+    const tag = board.sprints.find((sprint) => sprint.id === sprintId)?.tag;
+    const withTag = (text) => (tag ? `${tag} · ${text}` : text);
     if (needsActualTime({ ...card, time: data })) {
       return [{
         title: 'Tid',
@@ -63,7 +73,7 @@ window.TrelloPowerUp.initialize({
     }
     return [{
       title: 'Tid',
-      text: data.completedAt ? `${formatHours(data.actual)} faktisk · ${formatHours(data.estimate)} estimeret` : `${formatHours(data.estimate)} estimeret`,
+      text: withTag(data.completedAt ? `${formatHours(data.actual)} faktisk · ${formatHours(data.estimate)} estimeret` : `${formatHours(data.estimate)} estimeret`),
       color: data.completedAt ? preferences.completedColor : preferences.activeColor,
       callback: (context) => context.popup({ title: 'Registrér faktisk tid', url: './card.html?v=9', height: 350 }),
     }];

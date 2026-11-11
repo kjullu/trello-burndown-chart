@@ -388,7 +388,7 @@ describe('sprint board', () => {
 
   it('turns the old single date pair into a first sprint that owns unassigned cards', () => {
     const board = normalizeSprintBoard({ startDate: '2026-09-16', endDate: '2026-09-29' }, fallback);
-    expect(board).toEqual({ sprints: [{ id: 's1', name: 'Sprint 1', startDate: '2026-09-16', endDate: '2026-09-29' }], legacySprintId: 's1' });
+    expect(board).toEqual({ sprints: [{ id: 's1', name: 'Sprint 1', tag: 'S1', startDate: '2026-09-16', endDate: '2026-09-29' }], legacySprintId: 's1' });
     expect(normalizeSprintBoard(null, fallback).sprints[0]).toMatchObject(fallback);
   });
 
@@ -414,12 +414,12 @@ describe('sprint board', () => {
   });
 
   it('drafts the next sprint right after the last one', () => {
-    expect(nextSprintDraft(sprints, '2026-11-20', 14)).toEqual({ id: 's3', name: 'Sprint 3', startDate: '2026-12-02', endDate: '2026-12-15' });
+    expect(nextSprintDraft(sprints, '2026-11-20', 14)).toEqual({ id: 's3', tag: 'S3', name: 'Sprint 3', startDate: '2026-12-02', endDate: '2026-12-15' });
     expect(nextSprintDraft(sprints, '2027-01-05', 7)).toMatchObject({ startDate: '2027-01-05', endDate: '2027-01-11' });
   });
 
   it('rejects overlapping or reversed sprints', () => {
-    expect(sprintError({ id: 's3', name: 'Sprint 3', startDate: '2026-12-01', endDate: '2026-12-10' }, sprints)).toBe('Datoerne overlapper Sprint 2.');
+    expect(sprintError({ id: 's3', tag: 'S3', name: 'Sprint 3', startDate: '2026-12-01', endDate: '2026-12-10' }, sprints)).toBe('Datoerne overlapper Sprint 2.');
     expect(sprintError({ id: 's2', name: 'Sprint 2', startDate: '2026-11-25', endDate: '2026-11-20' }, sprints)).toBe('Slutdatoen må ikke ligge før startdatoen.');
     expect(sprintError({ ...sprints[1], endDate: '2026-12-05' }, sprints)).toBeNull();
     expect(formatSprintRange(sprints[1])).toBe('18/11 - 1/12');
@@ -440,5 +440,16 @@ describe('setEstimateFrom', () => {
     const history = [{ date: '2026-11-04', estimate: 28 }];
     expect(setEstimateFrom(history, '2026-10-26', 30)).toEqual([{ date: '2026-10-26', estimate: 30 }]);
     expect(setEstimateFrom([{ date: null, estimate: 5 }], '2026-10-26', 8)).toEqual([{ date: null, estimate: 5 }, { date: '2026-10-26', estimate: 8 }]);
+  });
+});
+
+describe('sprint tags', () => {
+  it('keeps a custom tag and falls back to the id number', () => {
+    const board = normalizeSprintBoard({ sprints: [
+      { id: 's1', tag: ' Q1 ', startDate: '2026-11-02', endDate: '2026-11-13' },
+      { id: 's2', tag: 'toolong', startDate: '2026-11-16', endDate: '2026-11-27' },
+      { id: 's7', startDate: '2026-12-01', endDate: '2026-12-10' },
+    ] });
+    expect(board.sprints.map((sprint) => sprint.tag)).toEqual(['Q1', 'tool', 'S7']);
   });
 });

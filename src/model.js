@@ -171,6 +171,13 @@ export function normalizeSprintSettings(value, fallback) {
 
 export const SPRINT_LIMIT = 40;
 const SPRINT_NAME_LIMIT = 40;
+export const SPRINT_TAG_LIMIT = 4;
+
+// Short label shown on card badges. Defaults to the id number, e.g. "S3".
+export function defaultSprintTag(id) {
+  const number = /^s(\d+)$/.exec(id ?? '')?.[1];
+  return number ? `S${number}` : '';
+}
 
 // Board settings hold every sprint. Older boards stored a single { startDate, endDate } pair;
 // that pair becomes the first sprint, and cards that were never assigned belong to it.
@@ -181,19 +188,20 @@ export function normalizeSprintBoard(value, fallback) {
     .map((sprint) => ({
       id: normalizeSprintId(sprint?.id),
       name: typeof sprint?.name === 'string' ? sprint.name.trim().slice(0, SPRINT_NAME_LIMIT) : '',
+      tag: typeof sprint?.tag === 'string' ? sprint.tag.trim().slice(0, SPRINT_TAG_LIMIT) : '',
       startDate: normalizeDate(sprint?.startDate),
       endDate: normalizeDate(sprint?.endDate),
     }))
     .filter((sprint) => sprint.id && sprint.startDate && sprint.endDate && sprint.startDate <= sprint.endDate && !seen.has(sprint.id) && seen.add(sprint.id))
     .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0))
     .slice(0, SPRINT_LIMIT)
-    .map((sprint, index) => ({ ...sprint, name: sprint.name || `Sprint ${index + 1}` }));
+    .map((sprint, index) => ({ ...sprint, name: sprint.name || `Sprint ${index + 1}`, tag: sprint.tag || defaultSprintTag(sprint.id) || `S${index + 1}` }));
   if (sprints.length) {
     const legacySprintId = normalizeSprintId(value.legacySprintId);
     return { sprints, legacySprintId: legacySprintId && seen.has(legacySprintId) ? legacySprintId : null };
   }
   const dates = normalizeSprintSettings(value, fallback);
-  return { sprints: [{ id: 's1', name: 'Sprint 1', ...dates }], legacySprintId: 's1' };
+  return { sprints: [{ id: 's1', name: 'Sprint 1', tag: 'S1', ...dates }], legacySprintId: 's1' };
 }
 
 export function sprintStatus(sprint, todayKey) {
@@ -218,8 +226,10 @@ export function nextSprintDraft(sprints, todayKey, durationDays = DEFAULT_PREFER
   const last = sprints.at(-1);
   const startDate = last && last.endDate >= todayKey ? addDays(last.endDate, 1) : todayKey;
   const ids = sprints.map((sprint) => Number(/^s(\d+)$/.exec(sprint.id)?.[1]) || 0);
+  const id = `s${Math.max(0, ...ids) + 1}`;
   return {
-    id: `s${Math.max(0, ...ids) + 1}`,
+    id,
+    tag: defaultSprintTag(id),
     name: `Sprint ${sprints.length + 1}`,
     startDate,
     endDate: addDays(startDate, Math.max(1, durationDays) - 1),
