@@ -83,6 +83,23 @@
         <p>Åbn et kort, vælg "Tid &amp; afslutning", vælg sprinten, og tilføj et estimat.</p>
       </section>
       <p id="dashboard-error" class="form-message error" role="alert" hidden></p>
+      <dialog id="wrap-up" class="wrap-up" aria-labelledby="wrap-up-title">
+        <form id="wrap-up-form" method="dialog">
+          <h2 id="wrap-up-title">Sprinten er slut</h2>
+          <p id="wrap-up-summary"></p>
+          <ul id="wrap-up-cards" class="wrap-up-cards"></ul>
+          <div role="radiogroup" aria-label="Hvad skal der ske med de ufærdige kort?">
+          <label class="choice"><input type="radio" name="wrap-up-choice" value="next" checked /><span><strong id="wrap-up-next">Flyt til næste sprint</strong><small>Tæller med fra sprintens start</small></span></label>
+          <label class="choice"><input type="radio" name="wrap-up-choice" value="backlog" /><span><strong>Flyt til backlog</strong><small>Tæller ikke med i nogen sprint</small></span></label>
+          <label class="choice"><input type="radio" name="wrap-up-choice" value="stay" /><span><strong>Lad dem blive</strong><small id="wrap-up-stay"></small></span></label>
+          </div>
+          <p id="wrap-up-error" class="sprint-form-error" role="alert" hidden></p>
+          <div class="sprint-form-actions">
+            <button id="wrap-up-later" class="button button-quiet" type="button">Senere</button>
+            <button id="wrap-up-submit" class="button button-primary" type="submit">Fortsæt</button>
+          </div>
+        </form>
+      </dialog>
     </main>
     <script type="module" src="/src/dashboard.js"></script>
   </body>
