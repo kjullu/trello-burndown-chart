@@ -69,7 +69,8 @@ Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede
 1. Vælg **Burndown** i boardets topmenu.
 2. Åbn **Sprints** for at oprette sprints eller rette navn og datoer. **+ Ny sprint** starter dagen efter den sidste sprint og bruger standardlængden fra indstillingerne. Sprints må ikke overlappe.
 3. Skift sprint ved at klikke på sprintnavnet eller bruge pilene ‹ ›. Dashboardet åbner altid på den sprint, der kører nu.
-4. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid, velocity, effektivitet og en prognose for, hvornår arbejdet er færdigt.
+4. Når en sprint er slut, og der stadig er kort med estimat, som ikke er færdige, spørger dashboardet, hvad der skal ske med dem: flyt dem til næste sprint (der oprettes en, hvis der ikke er nogen), flyt dem til backlog, eller lad dem blive. **Senere** spørger igen næste gang dashboardet åbnes.
+5. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid, velocity, effektivitet og en prognose for, hvornår arbejdet er færdigt.
 
 Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
 

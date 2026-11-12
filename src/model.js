@@ -198,7 +198,14 @@ export function normalizeSprintBoard(value, fallback) {
     .map((sprint, index) => ({ ...sprint, name: sprint.name || `Sprint ${index + 1}`, tag: sprint.tag || defaultSprintTag(sprint.id) || `S${index + 1}` }));
   if (sprints.length) {
     const legacySprintId = normalizeSprintId(value.legacySprintId);
-    return { sprints, legacySprintId: legacySprintId && seen.has(legacySprintId) ? legacySprintId : null };
+    const kept = new Set(sprints.map((sprint) => sprint.id));
+    // Ended sprints whose leftover cards were already dealt with. One short list keeps the board under Trello's size limit.
+    const closedSprintIds = [...new Set(Array.isArray(value.closedSprintIds) ? value.closedSprintIds : [])].filter((id) => kept.has(id));
+    return {
+      sprints,
+      legacySprintId: legacySprintId && kept.has(legacySprintId) ? legacySprintId : null,
+      ...(closedSprintIds.length ? { closedSprintIds } : {}),
+    };
   }
   const dates = normalizeSprintSettings(value, fallback);
   return { sprints: [{ id: 's1', name: 'Sprint 1', tag: 'S1', ...dates }], legacySprintId: 's1' };
@@ -220,6 +227,37 @@ export function currentSprint(sprints, todayKey) {
 
 export function cardSprintId(time, board) {
   return time.sprintId === undefined ? board.legacySprintId ?? null : time.sprintId;
+}
+
+// Estimated cards still open in a sprint. Cards without an estimate never show on the chart, and cards
+// marked done in Trello only miss their actual time, so both are left alone.
+export function unfinishedCards(cards, sprint, board) {
+  return cards.filter((card) => cardSprintId(card.time, board) === sprint.id && !card.time.completedAt && !card.dueComplete && card.time.estimate);
+}
+
+export function isSprintClosed(board, id) {
+  return Boolean(board.closedSprintIds?.includes(id));
+}
+
+// Marks a sprint as dealt with, or reopens it.
+export function setSprintClosed(board, id, closed) {
+  const others = (board.closedSprintIds ?? []).filter((other) => other !== id);
+  const closedSprintIds = closed ? [...others, id] : others;
+  const { closedSprintIds: _, ...rest } = board;
+  return closedSprintIds.length ? { ...rest, closedSprintIds } : rest;
+}
+
+// Where leftover cards go: the first later sprint that has not ended too.
+export function wrapUpTarget(sprints, sprint, todayKey) {
+  return sprints.find((other) => other.startDate > sprint.endDate && sprintStatus(other, todayKey) !== 'past') ?? null;
+}
+
+// The latest ended sprint whose leftover cards nobody has decided about yet.
+export function sprintToWrapUp(cards, board, todayKey, skippedIds = []) {
+  return board.sprints
+    .filter((sprint) => sprintStatus(sprint, todayKey) === 'past' && !isSprintClosed(board, sprint.id) && !skippedIds.includes(sprint.id))
+    .reverse()
+    .find((sprint) => unfinishedCards(cards, sprint, board).length) ?? null;
 }
 
 export function nextSprintDraft(sprints, todayKey, durationDays = DEFAULT_PREFERENCES.defaultSprintDays) {

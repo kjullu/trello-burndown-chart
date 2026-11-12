@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, addDays, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, cardSprintId, currentSprint, defaultSprintDates, formatDanishDate, formatHours, formatSprintRange, localDateKey, needsActualTime, nextSprintDraft, normalizePreferences, normalizeSprintBoard, normalizeTimeData, parseDanishDate, sprintError, sprintStatus, workDayRange } from './model.js';
+import { BOARD_PREFERENCES_KEY, addDays, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, cardSprintId, currentSprint, defaultSprintDates, formatDanishDate, formatHours, formatSprintRange, localDateKey, needsActualTime, nextSprintDraft, normalizePreferences, normalizeSprintBoard, normalizeTimeData, parseDanishDate, sprintError, sprintStatus, setSprintClosed, sprintToWrapUp, unfinishedCards, workDayRange, wrapUpTarget } from './model.js';
 import { renderChart } from './chart.js';
 import { createTrelloClient } from './trello-client.js';
 
@@ -96,7 +96,7 @@ for (const field of ['start-date', 'end-date']) {
 
 function sprintFromForm() {
   return {
-    id: editingSprint.id,
+    ...editingSprint,
     name: document.querySelector('#sprint-name').value.trim() || editingSprint.name,
     tag: document.querySelector('#sprint-tag').value.trim() || editingSprint.tag,
     startDate: parseDanishDate(document.querySelector('#start-date').value),
@@ -369,10 +369,10 @@ async function load() {
   ]);
   boardName = board.name;
   document.querySelector('#board-title').textContent = board.name;
-  cards = await Promise.all(trelloCards.map(async (card) => ({
-    ...card,
-    time: normalizeTimeData(await t.get(card.id, 'shared', CARD_DATA_KEY, {})),
-  })));
+  cards = await Promise.all(trelloCards.map(async (card) => {
+    const stored = await t.get(card.id, 'shared', CARD_DATA_KEY, {});
+    return { ...card, stored, time: normalizeTimeData(stored) };
+  }));
   preferences = normalizePreferences(storedPreferences);
   const defaults = defaultSprintDates(new Date(), preferences.defaultSprintDays);
   sprintBoard = normalizeSprintBoard(storedSettings, defaults);
@@ -384,7 +384,138 @@ async function load() {
     error.hidden = false;
     throw reason;
   }
+  offerWrapUp();
 }
+
+// When a sprint has ended with open cards, ask once what should happen to them.
+const wrapUpDialog = document.querySelector('#wrap-up');
+const wrapUpForm = document.querySelector('#wrap-up-form');
+const skippedWrapUps = [];
+let wrapUpSprint = null;
+let wrapUpBusy = false;
+let wrapUpHandled = false;
+
+class WrapUpError extends Error {}
+
+function offerWrapUp() {
+  wrapUpSprint = sprintToWrapUp(cards, sprintBoard, today, skippedWrapUps);
+  if (!wrapUpSprint || typeof wrapUpDialog?.showModal !== 'function') return;
+  wrapUpHandled = false;
+  const left = unfinishedCards(cards, wrapUpSprint, sprintBoard);
+  const hours = left.reduce((sum, card) => sum + card.time.estimate, 0);
+  const next = wrapUpTarget(sprintBoard.sprints, wrapUpSprint, today);
+  document.querySelector('#wrap-up-title').textContent = `${wrapUpSprint.name} er slut`;
+  document.querySelector('#wrap-up-summary').textContent = `${left.length} kort med i alt ${formatHours(hours)} blev ikke færdige.`;
+  document.querySelector('#wrap-up-cards').replaceChildren(...left.map((card) => {
+    const item = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = card.name;
+    const estimate = document.createElement('span');
+    estimate.textContent = formatHours(card.time.estimate);
+    item.append(name, estimate);
+    return item;
+  }));
+  document.querySelector('#wrap-up-next').textContent = next ? `Flyt til ${next.name}` : 'Flyt til en ny sprint';
+  document.querySelector('#wrap-up-stay').textContent = `${wrapUpSprint.name}s graf ender over nul`;
+  document.querySelector('#wrap-up-error').hidden = true;
+  wrapUpForm.querySelector('input[value="next"]').checked = true;
+  wrapUpDialog.showModal();
+}
+
+async function saveBoard(board, message) {
+  try {
+    await t.set('board', 'shared', BOARD_SETTINGS_KEY, board);
+  } catch (reason) {
+    throw new WrapUpError(message, { cause: reason });
+  }
+  sprintBoard = board;
+}
+
+async function targetSprintId(sprint) {
+  const existing = wrapUpTarget(sprintBoard.sprints, sprint, today);
+  if (existing) return existing.id;
+  const draft = nextSprintDraft(sprintBoard.sprints, today, preferences.defaultSprintDays);
+  const problem = sprintError(draft, sprintBoard.sprints);
+  if (problem) throw new WrapUpError(`Der kunne ikke oprettes en ny sprint: ${problem}`);
+  const board = normalizeSprintBoard({ ...sprintBoard, sprints: [...sprintBoard.sprints, draft] });
+  if (!board.sprints.some((other) => other.id === draft.id)) throw new WrapUpError('Der kunne ikke oprettes en ny sprint.');
+  // Save the new sprint before any card points at it.
+  await saveBoard(board, 'Den nye sprint kunne ikke gemmes. Prøv igen.');
+  renderSprintSwitch();
+  return draft.id;
+}
+
+async function moveCard(card, sprintId, targetId) {
+  try {
+    // Read the card again, so a teammate's change since the dashboard opened is not overwritten.
+    const latest = await t.get(card.id, 'shared', CARD_DATA_KEY, {});
+    const time = normalizeTimeData(latest);
+    const stored = time.completedAt || cardSprintId(time, sprintBoard) !== sprintId ? latest : { ...latest, sprintId: targetId };
+    if (stored !== latest) await t.set(card.id, 'shared', CARD_DATA_KEY, stored);
+    card.stored = stored;
+    card.time = normalizeTimeData(stored);
+  } catch (reason) {
+    throw new WrapUpError('Nogle kort kunne ikke flyttes. Prøv igen.', { cause: reason });
+  }
+}
+
+async function wrapUp(choice) {
+  const sprint = wrapUpSprint;
+  const left = unfinishedCards(cards, sprint, sprintBoard);
+  const targetId = choice === 'next' ? await targetSprintId(sprint) : null;
+  if (choice !== 'stay') await Promise.all(left.map((card) => moveCard(card, sprint.id, targetId)));
+  await saveBoard(setSprintClosed(sprintBoard, sprint.id, true), 'Valget kunne ikke gemmes, så du bliver spurgt igen næste gang.');
+  return targetId;
+}
+
+function setWrapUpBusy(busy) {
+  wrapUpBusy = busy;
+  document.querySelector('#wrap-up-submit').disabled = busy;
+  document.querySelector('#wrap-up-later').disabled = busy;
+}
+
+function redraw(id) {
+  try {
+    showSprint(id);
+  } catch (reason) {
+    const error = document.querySelector('#dashboard-error');
+    error.textContent = 'Dashboardet kunne ikke vises. Genåbn dashboardet og prøv igen.';
+    error.hidden = false;
+    console.error(reason);
+  }
+}
+
+wrapUpForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (wrapUpBusy) return;
+  const choice = wrapUpForm.querySelector('input[name="wrap-up-choice"]:checked')?.value ?? 'stay';
+  setWrapUpBusy(true);
+  let targetId;
+  try {
+    targetId = await wrapUp(choice);
+  } catch (reason) {
+    const error = document.querySelector('#wrap-up-error');
+    error.textContent = reason instanceof WrapUpError ? reason.message : 'Noget gik galt. Prøv igen.';
+    error.hidden = false;
+    console.error(reason);
+    redraw(selectedSprintId);
+    return;
+  } finally {
+    setWrapUpBusy(false);
+  }
+  wrapUpHandled = true;
+  redraw(targetId ?? selectedSprintId);
+  wrapUpDialog.close();
+});
+
+// Escape works like "Senere", but not while a choice is being saved.
+wrapUpDialog?.addEventListener('cancel', (event) => { if (wrapUpBusy) event.preventDefault(); });
+document.querySelector('#wrap-up-later')?.addEventListener('click', () => wrapUpDialog.close());
+// Every way of closing ends here: skip the sprint unless it was dealt with, then ask about the next one.
+wrapUpDialog?.addEventListener('close', () => {
+  if (wrapUpSprint && !wrapUpHandled) skippedWrapUps.push(wrapUpSprint.id);
+  offerWrapUp();
+});
 
 settingsToggle.addEventListener('click', () => {
   settingsPanel.hidden = !settingsPanel.hidden;
@@ -435,7 +566,9 @@ sprintForm.addEventListener('submit', async (event) => {
   if (checkSprintForm()) return;
   error.hidden = true;
   const others = sprintBoard.sprints.filter((other) => other.id !== sprint.id);
-  const next = normalizeSprintBoard({ ...sprintBoard, sprints: [...others, sprint] });
+  // A sprint moved back into the present has not ended, so it may be asked about again later.
+  const board = sprint.endDate >= today ? setSprintClosed(sprintBoard, sprint.id, false) : sprintBoard;
+  const next = normalizeSprintBoard({ ...board, sprints: [...others, sprint] });
   if (!await saveSprintBoard(next, 'Sprinten kunne ikke gemmes. Prøv igen.')) return;
   closeSprintForm();
   try {

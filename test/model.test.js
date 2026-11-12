@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, setEstimateFrom, cardSprintId, currentSprint, formatSprintRange, nextSprintDraft, normalizeSprintBoard, sprintError, sprintStatus, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
+import { addDays, setEstimateFrom, cardSprintId, currentSprint, formatSprintRange, nextSprintDraft, normalizeSprintBoard, sprintError, sprintStatus, setSprintClosed, sprintToWrapUp, unfinishedCards, wrapUpTarget, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('keeps an explicitly empty estimate history empty', () => {
@@ -451,5 +451,47 @@ describe('sprint tags', () => {
       { id: 's7', startDate: '2026-12-01', endDate: '2026-12-10' },
     ] });
     expect(board.sprints.map((sprint) => sprint.tag)).toEqual(['Q1', 'tool', 'S7']);
+  });
+});
+
+describe('sprint wrap-up', () => {
+  const board = normalizeSprintBoard({ sprints: [
+    { id: 's1', startDate: '2026-11-02', endDate: '2026-11-13' },
+    { id: 's2', startDate: '2026-11-16', endDate: '2026-11-27' },
+    { id: 's3', startDate: '2026-11-30', endDate: '2026-12-11' },
+  ], legacySprintId: 's1' });
+  const card = (id, time, dueComplete = false) => ({ id, name: id, dueComplete, time: normalizeTimeData(time) });
+  const cards = [
+    card('open', { estimate: 5, sprintId: 's1' }),
+    card('done', { estimate: 3, completedAt: '2026-11-10', sprintId: 's1' }),
+    card('needs-actual', { estimate: 4, sprintId: 's1' }, true),
+    card('blank', {}),
+    card('later', { estimate: 2, sprintId: 's2' }),
+  ];
+
+  it('only lists open cards with an estimate that are not done in Trello', () => {
+    expect(unfinishedCards(cards, board.sprints[0], board).map((c) => c.id)).toEqual(['open']);
+  });
+
+  it('asks about the latest ended sprint that is not closed or skipped', () => {
+    expect(sprintToWrapUp(cards, board, '2026-11-20')?.id).toBe('s1');
+    expect(sprintToWrapUp(cards, board, '2026-11-10')).toBeNull();
+    expect(sprintToWrapUp(cards, board, '2026-11-20', ['s1'])).toBeNull();
+    const closed = normalizeSprintBoard(setSprintClosed(board, 's1', true));
+    expect(closed.closedSprintIds).toEqual(['s1']);
+    expect(sprintToWrapUp(cards, closed, '2026-11-20')).toBeNull();
+    expect(sprintToWrapUp(cards, board, '2026-12-01')?.id).toBe('s2');
+    expect(setSprintClosed(closed, 's1', false)).not.toHaveProperty('closedSprintIds');
+  });
+
+  it('forgets closed ids of deleted sprints', () => {
+    const next = normalizeSprintBoard({ ...setSprintClosed(board, 's9', true), sprints: board.sprints });
+    expect(next).not.toHaveProperty('closedSprintIds');
+  });
+
+  it('never moves cards into a sprint that has ended too', () => {
+    expect(wrapUpTarget(board.sprints, board.sprints[0], '2026-11-20')?.id).toBe('s2');
+    expect(wrapUpTarget(board.sprints, board.sprints[0], '2026-12-01')?.id).toBe('s3');
+    expect(wrapUpTarget(board.sprints, board.sprints[0], '2026-12-20')).toBeNull();
   });
 });
