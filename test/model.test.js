@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, setEstimateFrom, cardSprintId, currentSprint, formatSprintRange, nextSprintDraft, normalizeSprintBoard, sprintError, sprintStatus, setSprintClosed, sprintToWrapUp, unfinishedCards, wrapUpTarget, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
+import { hasSavedSprints, addDays, setEstimateFrom, cardSprintId, currentSprint, formatSprintRange, nextSprintDraft, normalizeSprintBoard, sprintError, sprintStatus, setSprintClosed, sprintToWrapUp, unfinishedCards, wrapUpTarget, addWorkDays, buildBurndown, buildBurndownCsv, dateRange, defaultSprintDates, diffDays, backfillEstimate, estimateAsOf, formatDanishDate, formatHours, needsActualTime, normalizePreferences, normalizeSprintSettings, normalizeTimeData, parseDanishDate, recordEstimateChange, validDate, workDayRange } from '../src/model.js';
 
 describe('time data', () => {
   it('keeps an explicitly empty estimate history empty', () => {
@@ -493,5 +493,22 @@ describe('sprint wrap-up', () => {
     expect(wrapUpTarget(board.sprints, board.sprints[0], '2026-11-20')?.id).toBe('s2');
     expect(wrapUpTarget(board.sprints, board.sprints[0], '2026-12-01')?.id).toBe('s3');
     expect(wrapUpTarget(board.sprints, board.sprints[0], '2026-12-20')).toBeNull();
+  });
+});
+
+describe('first sprint on a new board', () => {
+  it('knows when no sprint has been saved yet', () => {
+    expect(hasSavedSprints(null)).toBe(false);
+    expect(hasSavedSprints({ sprints: [] })).toBe(false);
+    expect(hasSavedSprints({ startDate: '2026-09-16', endDate: '2026-09-29' })).toBe(true);
+    expect(hasSavedSprints({ sprints: [{ id: 's1', startDate: '2026-09-16', endDate: '2026-09-29' }] })).toBe(true);
+  });
+
+  it('names a new sprint after its id, so a deleted sprint does not cause a duplicate name', () => {
+    const sprints = [
+      { id: 's1', name: 'Sprint 1', startDate: '2026-11-04', endDate: '2026-11-17' },
+      { id: 's3', name: 'Sprint 3', startDate: '2026-11-18', endDate: '2026-12-01' },
+    ];
+    expect(nextSprintDraft(sprints, '2026-11-20', 14)).toMatchObject({ id: 's4', name: 'Sprint 4' });
   });
 });

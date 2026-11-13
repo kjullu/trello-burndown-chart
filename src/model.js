@@ -211,6 +211,12 @@ export function normalizeSprintBoard(value, fallback) {
   return { sprints: [{ id: 's1', name: 'Sprint 1', tag: 'S1', ...dates }], legacySprintId: 's1' };
 }
 
+// False while Sprint 1 is still only a suggestion that starts today. It has to be saved once,
+// or it would start over every day.
+export function hasSavedSprints(value) {
+  return normalizeSprintBoard(value, { startDate: null, endDate: null }).sprints[0].startDate !== null;
+}
+
 export function sprintStatus(sprint, todayKey) {
   if (sprint.endDate < todayKey) return 'past';
   if (sprint.startDate > todayKey) return 'planned';
@@ -264,11 +270,13 @@ export function nextSprintDraft(sprints, todayKey, durationDays = DEFAULT_PREFER
   const last = sprints.at(-1);
   const startDate = last && last.endDate >= todayKey ? addDays(last.endDate, 1) : todayKey;
   const ids = sprints.map((sprint) => Number(/^s(\d+)$/.exec(sprint.id)?.[1]) || 0);
-  const id = `s${Math.max(0, ...ids) + 1}`;
+  const number = Math.max(0, ...ids) + 1;
+  const id = `s${number}`;
   return {
     id,
     tag: defaultSprintTag(id),
-    name: `Sprint ${sprints.length + 1}`,
+    // Numbered like the id, so the name is not taken by an existing sprint after one was deleted.
+    name: `Sprint ${number}`,
     startDate,
     endDate: addDays(startDate, Math.max(1, durationDays) - 1),
   };

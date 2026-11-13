@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, addDays, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, cardSprintId, currentSprint, defaultSprintDates, formatDanishDate, formatHours, formatSprintRange, localDateKey, needsActualTime, nextSprintDraft, normalizePreferences, normalizeSprintBoard, normalizeTimeData, parseDanishDate, sprintError, sprintStatus, setSprintClosed, sprintToWrapUp, unfinishedCards, workDayRange, wrapUpTarget } from './model.js';
+import { BOARD_PREFERENCES_KEY, addDays, BOARD_SETTINGS_KEY, CARD_DATA_KEY, buildBurndown, buildBurndownCsv, cardSprintId, currentSprint, defaultSprintDates, formatDanishDate, formatHours, formatSprintRange, hasSavedSprints, localDateKey, needsActualTime, nextSprintDraft, normalizePreferences, normalizeSprintBoard, normalizeTimeData, parseDanishDate, sprintError, sprintStatus, setSprintClosed, sprintToWrapUp, unfinishedCards, workDayRange, wrapUpTarget } from './model.js';
 import { renderChart } from './chart.js';
 import { createTrelloClient } from './trello-client.js';
 
@@ -384,6 +384,10 @@ async function load() {
     error.hidden = false;
     throw reason;
   }
+  if (!demoMode && !hasSavedSprints(storedSettings)) {
+    // Best effort: a member who may not edit the board just sees the suggested sprint.
+    try { await t.set('board', 'shared', BOARD_SETTINGS_KEY, sprintBoard); } catch { /* read-only */ }
+  }
   offerWrapUp();
 }
 
@@ -457,6 +461,15 @@ async function moveCard(card, sprintId, targetId) {
   } catch (reason) {
     throw new WrapUpError('Nogle kort kunne ikke flyttes. Prøv igen.', { cause: reason });
   }
+}
+
+// A deleted sprint's id can be handed out again, so its cards must stop pointing at it.
+async function sendToBacklog(card, sprintId) {
+  const latest = await t.get(card.id, 'shared', CARD_DATA_KEY, {});
+  const stored = normalizeTimeData(latest).sprintId === sprintId ? { ...latest, sprintId: null } : latest;
+  if (stored !== latest) await t.set(card.id, 'shared', CARD_DATA_KEY, stored);
+  card.stored = stored;
+  card.time = normalizeTimeData(stored);
 }
 
 async function wrapUp(choice) {
@@ -552,7 +565,17 @@ document.querySelector('#delete-sprint').addEventListener('click', async () => {
   const warning = cardCount ? ` ${cardCount} kort flyttes til backlog.` : '';
   if (!window.confirm(`Slet ${editingSprint.name}?${warning}`)) return;
   const removedId = editingSprint.id;
-  const next = { ...sprintBoard, sprints: sprintBoard.sprints.filter((sprint) => sprint.id !== removedId) };
+  try {
+    await Promise.all(cards.filter((card) => card.time.sprintId === removedId).map((card) => sendToBacklog(card, removedId)));
+  } catch (reason) {
+    const error = document.querySelector('#dashboard-error');
+    error.textContent = 'Sprinten kunne ikke slettes. Prøv igen.';
+    error.hidden = false;
+    console.error(reason);
+    return;
+  }
+  // Normalizing also drops the deleted sprint from the legacy and closed lists.
+  const next = normalizeSprintBoard({ ...sprintBoard, sprints: sprintBoard.sprints.filter((sprint) => sprint.id !== removedId) });
   if (!await saveSprintBoard(next, 'Sprinten kunne ikke slettes. Prøv igen.')) return;
   closeSprintForm();
   showSprint(selectedSprintId === removedId ? currentSprint(sprintBoard.sprints, today).id : selectedSprintId);
