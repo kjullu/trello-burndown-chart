@@ -1,4 +1,4 @@
-import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, backfillEstimate, cardSprintId, currentSprint, defaultSprintDates, formatSprintRange, localDateKey, normalizeSprintBoard, sprintStatus, normalizePreferences, normalizeTimeData, setEstimateFrom } from './model.js';
+import { BOARD_PREFERENCES_KEY, BOARD_SETTINGS_KEY, CARD_DATA_KEY, DEFAULT_PREFERENCES, backfillEstimate, cardSprintId, currentSprint, defaultSprintDates, formatSprintRange, hasSavedSprints, localDateKey, normalizeSprintBoard, sprintStatus, normalizePreferences, normalizeTimeData, setEstimateFrom } from './model.js';
 
 const t = window.TrelloPowerUp.iframe();
 const form = document.querySelector('#time-form');
@@ -25,6 +25,7 @@ let storedHistory = [];
 let sprintOptions = [];
 let sprintIndex = 0;
 let sprintListOpen = false;
+let unsavedBoard = null;
 const sprintTrack = document.querySelector('#sprint-track');
 const sprintPeek = sprintTrack.parentElement;
 const sprintListWrap = document.querySelector('#sprint-list-wrap');
@@ -191,6 +192,7 @@ async function initialize() {
   preferences = normalizePreferences(storedPreferences);
   const today = localDateKey();
   const board = normalizeSprintBoard(storedSprints, defaultSprintDates(new Date(), preferences.defaultSprintDays));
+  unsavedBoard = hasSavedSprints(storedSprints) ? null : board;
   // A card that was never registered starts in the sprint running now.
   const hasTime = Boolean(data.estimate || data.completedAt || data.estimateIgnored);
   const selectedId = data.sprintId !== undefined || hasTime ? cardSprintId(data, board) : currentSprint(board.sprints, today)?.id ?? null;
@@ -280,6 +282,8 @@ form.addEventListener('submit', async (event) => {
   save.disabled = true;
   save.textContent = 'Gemmer...';
   try {
+    // Keep the suggested first sprint, so it does not start over tomorrow.
+    if (unsavedBoard) await t.set('board', 'shared', BOARD_SETTINGS_KEY, unsavedBoard);
     await t.set('card', 'shared', CARD_DATA_KEY, data);
     await t.closePopup();
   } catch (reason) {
