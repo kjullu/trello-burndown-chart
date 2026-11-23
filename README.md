@@ -1,173 +1,23 @@
 # Sprintline
 
-> [!WARNING]
-> **Early Access:** Sprintline er stadig under udvikling. Funktioner, brugerflade og dataformat kan ændre sig, og fejl kan forekomme. Test Power-Up'en på et ikke-kritisk board, før du bruger den til et aktivt projekt.
-> **Der kommer også hurtige opdateringer, så hvis det er noget som er kritisk skal du [Host projektet selv](#host-projektet-selv)**
+Sprintline er en Trello Power-Up til sprintplanlægning. Sæt et estimat på hvert kort, registrér den faktiske tid, når arbejdet er færdigt, og følg de resterende timer på boardets burndown-graf.
 
-Sprintline er en Trello Power-Up til tidsestimater, faktisk tidsforbrug og burndown-grafer. Den tilføjer tidsregistrering til kortene og et samlet sprintdashboard til boardet.
+## Kom i gang
 
-Power-Up-ikonet ligger som en færdig PNG i `public/icon.png`. Den redigerbare Aseprite-kildefil ligger i `assets/burnDownChart.aseprite`.
+[Tilføj Sprintline til dit Trello-board](docs/opsaetning.md). Du opretter en Power-Up i dit Workspace og kan bruge den version, der er sat op til GitHub Pages.
 
-## Brug den eksisterende version
+Sprintline er under udvikling. Prøv det på et testboard først. Hvis du selv vil bestemme, hvornår du opdaterer, kan du [hoste Sprintline selv](docs/hosting.md).
 
-Du behøver ikke hoste koden selv. Den aktuelle version ligger på:
+Når Sprintline er tilføjet, kan du åbne **Tid & afslutning** på et kort og **Burndown** på boardet. Du kan også [prøve demoen lokalt uden Trello](docs/hosting.md#udvikl-lokalt).
 
-```text
-https://kjullu.github.io/trello-burndown-chart/
-```
+## Dokumentation
 
-Du skal stadig oprette din egen custom Power-Up i Trello, fordi en Power-Up tilhører et Trello Workspace. Brug adressen ovenfor som **Iframe Connector URL**, og følg opsætningen nedenfor.
+| Jeg vil … | Guide |
+| --- | --- |
+| Sætte Sprintline op i Trello | [Opsætning](docs/opsaetning.md) |
+| Registrere tid, styre sprints eller hente CSV | [Brug Sprintline](docs/brug.md) |
+| Forstå grafens linjer og prognosen | [Læs burndown-grafen](docs/burndown.md) |
+| Hoste selv eller køre projektet lokalt | [Hosting og lokal udvikling](docs/hosting.md) |
+| Se, hvor tidsdata gemmes, og hvem der kan læse dem | [Data og privatliv](docs/data.md) |
 
-Power-Up'en har ingen ekstern database. Tidsdata gemmes på dit eget Trello-board via Trellos `pluginData`.
-
-## Opret den som custom Power-Up i Trello
-
-1. Åbn [Trello App Admin](https://trello.com/apps/admin), og vælg **New**.
-2. Vælg **My app will use Power-Up capabilities**.
-3. Udfyld navn, Workspace, email, supportkontakt og forfatter. Supportkontakt er et obligatorisk felt. Du kan bruge din egen emailadresse.
-   Du kan bruge `public/icon.png` som appens ikon.
-4. Indsæt en af følgende adresser som **Iframe Connector URL**:
-   - Den eksisterende version: `https://kjullu.github.io/trello-burndown-chart/`
-   - Din egen HTTPS-adresse, hvis du selv hoster projektet.
-5. Opret appen.
-6. Åbn fanen **Capabilities**, og aktivér:
-   - `board-buttons`
-   - `card-buttons`
-   - `card-badges`
-   - `card-detail-badges`
-   - `show-settings`
-7. Gå tilbage til dit Trello-board, åbn **Power-Ups**, og tilføj den nye Power-Up.
-
-OAuth 2.0 skal ikke konfigureres. Sprintline bruger Power-Up-klientens datalager og kalder ikke Trellos REST API med en brugertoken.
-
-Hvis knapperne ikke vises med det samme efter en opdatering, skal du vente på, at deploymentet er færdigt, og derefter genindlæse Trello med `Ctrl+Shift+R`.
-
-## Sådan bruges Sprintline
-
-### Estimér en opgave
-
-1. Åbn et Trello-kort.
-2. Vælg **Tid & afslutning** under Power-Ups.
-3. Indtast det forventede antal timer under **Estimat**.
-4. Vælg sprinten øverst i dialogen. Brug pilene, klik på en nabo, eller klik på den midterste sprint for at se dem alle. Nye kort starter i den sprint, der kører nu. **Backlog** betyder, at kortet ikke er med i nogen sprint.
-5. Vælg **Gem tid**.
-
-Estimatet vises som et blåt badge på kortet.
-
-### Afslut en opgave
-
-1. Markér kortet som færdigt i Trello.
-2. Kortet får et rødt **Mangler faktisk tid**-badge.
-3. Åbn **Tid & afslutning**.
-4. Indtast den tid, opgaven faktisk tog, og kontrollér afslutningsdatoen.
-5. Vælg **Gem tid**.
-
-Badget bliver grønt, når den faktiske tid er registreret. Hvis kortet allerede er markeret som færdigt i Trello, åbner formularen automatisk felterne til faktisk tid.
-
-### Se burndown-grafen
-
-1. Vælg **Burndown** i boardets topmenu.
-2. Åbn **Sprints** for at oprette sprints eller rette navn og datoer. **+ Ny sprint** starter dagen efter den sidste sprint og bruger standardlængden fra indstillingerne. Sprints må ikke overlappe.
-3. Skift sprint ved at klikke på sprintnavnet eller bruge pilene ‹ ›. Dashboardet åbner altid på den sprint, der kører nu.
-4. Når en sprint er slut, og der stadig er kort med estimat, som ikke er færdige, spørger dashboardet, hvad der skal ske med dem: flyt dem til næste sprint (der oprettes en, hvis der ikke er nogen), flyt dem til backlog, eller lad dem blive. **Senere** spørger igen næste gang dashboardet åbnes.
-5. Dashboardet viser timer tilbage, færdige kort, forskellen mellem estimeret og faktisk tid, velocity, effektivitet og en prognose for, hvornår arbejdet er færdigt.
-
-Den stiplede linje er det ideelle forløb. Den blå linje viser den resterende estimerede indsats, og den stiplede røde linje er prognosen.
-
-Værdien på den blå linje er **summen af den indsats, der er tilbage efter dagens registreringer** — ikke en løbende nedskrivning af en fast total. Et nyt estimat tæller med fra den dato, det gemmes. Tilføjes der arbejde midt i sprinten, stiger den blå linje derfor fra den dag, uden at tidligere punkter eller den ideelle linje ændres. Estimatændringer gælder også fra ændringsdatoen. Ældre kort uden en registreret dato for det første estimat regnes som en del af den oprindelige backlog, fordi tilføjelsesdatoen ikke kendes. Grafen viser én samlet værdi pr. arbejdsdag, så tilføjelser og afslutninger samme dag kan udligne hinanden. Ændringer i weekenden vises på næste arbejdsdags punkt. Arbejde, der afsluttes på en given dato, er brændt af på dagens punkt, mens den ideelle linje stadig starter ved sprintens oprindelige backlog. Den ideelle linje ender ved nul på sprintens sidste arbejdsdag. Et kort der allerede var afsluttet før sprinten, tæller ikke med. Weekender bruger ingen kapacitet og vises ikke på tidsaksen.
-
-### Prognose, velocity og effektivitet
-
-- **Velocity** er den estimerede mængde arbejde, der er afbrændt pr. arbejdsdag i sprinten.
-- **Effektivitet** er forholdet mellem det estimerede og det faktiske tidsforbrug på de afsluttede opgaver. En faktor på 100 % betyder, at arbejdet tog lige så lang tid som estimeret. Under 100 % tager det længere tid. Faktoren genberegnes automatisk i takt med at faktisk tid registreres; indtil da bruges den planlagte faktor fra indstillingerne.
-- **Prognose** er den arbejdsdag, hvor det resterende arbejde forventes færdigt, udregnet som `resterende timer ÷ (arbejdstimer pr. arbejdsdag × antal medarbejdere × effektivitet)`. Grafens akse følger sprintdatoerne. Hvis prognosen ligger efter sprintens slutdato, stopper den røde linje over nul ved sprintens slutning, og prognosedatoen vises med advarselsfarven.
-
-Den samme formel bruges til at forudsige hele sprintens varighed fra starten: `(samlet estimat ÷ (arbejdstimer pr. arbejdsdag × medarbejdere)) ÷ effektivitet`. Det er den faktor, der kompenserer for systematiske skævvrid i estimaterne, så et hold der konsekvent overestimerer ikke altid ser ud til at være foran planen.
-
-### Tilpas indstillingerne
-
-Åbn boardets **Power-Ups**-menu, find Sprintline, og vælg **Settings**. Indstillingerne gælder kun for det aktuelle board.
-
-Her kan du vælge farver for aktive og færdige opgaver samt kort, hvor handling kræves, angive et standardestimat, slå automatisk kopiering til faktisk tid til eller fra, vise en påmindelse på kort uden estimat, skjule badges på kortforsiden og vælge standardlængden på nye sprints. Advarselsfarven på kort bruges kun, når en bruger skal handle, for eksempel når et estimat eller faktisk tidsforbrug mangler. Under **Prognose** sætter du antal medarbejdere, arbejdstimer pr. dag og den planlagte effektivitetsfaktor. Når påmindelsen om manglende estimat er slået til, kan du fravælge den på enkelte kort via **Tid & afslutning**-dialogens afkrydsningsfelt **Ignorér manglende estimat**.
-
-## Host projektet selv
-
-Trello indlæser Power-Up'en i iframes og kræver derfor en offentlig HTTPS-adresse. Projektet er statisk og kræver ingen server eller database.
-
-### GitHub Pages
-
-Repositoryet indeholder workflowet `.github/workflows/deploy-pages.yml`. Det tester, bygger og publicerer siden ved hvert push til `master`.
-
-1. Fork eller push projektet til dit eget GitHub-repository.
-2. Åbn **Settings → Pages** i repositoryet.
-3. Vælg **GitHub Actions** under **Source**. Vælg ikke skabelonen **Static HTML**, da Vite først skal bygge projektet.
-4. Push til `master`, og vent på at workflowet **Deploy to GitHub Pages** bliver grønt under fanen **Actions**.
-5. Din connector-adresse bliver normalt:
-
-   ```text
-   https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/
-   ```
-
-Workflowet beregner automatisk den korrekte repository-sti til Vite-buildet.
-
-Hvis GitHub afviser workflow-filen med en fejl om manglende `workflow`-scope, kan GitHub CLI-loginet opdateres med:
-
-```bash
-gh auth refresh -h github.com -s workflow
-```
-
-Vent på `Authentication complete`, før terminalkommandoen afbrydes, og push derefter igen.
-
-### Netlify
-
-1. Importér repositoryet i Netlify.
-2. Brug build-kommandoen `npm run build`.
-3. Brug outputmappen `dist`.
-4. Deploy siden, og brug Netlify-adressen som Iframe Connector URL.
-
-### Vercel
-
-1. Importér repositoryet i Vercel.
-2. Vælg Vite som framework, hvis det ikke registreres automatisk.
-3. Brug build-kommandoen `npm run build` og outputmappen `dist`.
-4. Deploy siden, og brug Vercel-adressen som Iframe Connector URL.
-
-Netlify og Vercel publicerer normalt siden på domænets rod. Vite bruger derfor `/` automatisk, når `VITE_BASE_PATH` ikke er sat.
-
-## Lokal udvikling
-
-Installer afhængigheder og start Vite:
-
-```bash
-npm install
-npm run dev
-```
-
-Demo-dashboardet kan åbnes uden Trello på:
-
-```text
-http://localhost:5173/dashboard.html?demo
-```
-
-Eksemplet på tilføjet arbejde kan ses på `http://localhost:5173/dashboard.html?demo=added-work`. Her tilføjes 10 timer den 23. september, så den blå linje stiger den dag. Eksemplet på en oprindelig backlog kan ses på `http://localhost:5173/dashboard.html?demo=wikipedia-baseline`. Her starter den faktiske og ideelle linje sammen. Demoerne bruger faste datoer og data, så resultatet er det samme uanset hvornår de åbnes.
-
-For at teste selve Power-Up-integrationen skal den lokale server eksponeres via en HTTPS-tunnel. Brug tunnelens rodadresse som Iframe Connector URL i en test-Power-Up.
-
-Kør test og produktionsbuild med:
-
-```bash
-npm test
-npm run build
-```
-
-## Data og privatliv
-
-Sprintline gemmer disse delte oplysninger:
-
-- Estimeret tid, faktisk tid, afslutningsdato og en kort historik over estimatændringer på det enkelte kort. Historikken bruges til at vise det korrekte resterende arbejde for hver dag, så fortidens grafpunkter ikke ændrer sig, når et estimat rettes.
-- Boardets sprints med navn, start- og slutdato, samt hvilken sprint hvert kort hører til. Kort fra før der kom flere sprints, hører til den første sprint.
-- Antal medarbejdere, arbejdstimer pr. dag og effektivitetsfaktor på boardet.
-
-Data gemmes via Trellos `pluginData` med synligheden `shared`. Det betyder, at medlemmer med adgang til kortet eller boardet kan læse Power-Up-dataene. Der sendes ingen tidsdata til GitHub Pages, Netlify, Vercel eller en ekstern database.
-
-Trello har en grænse på 4096 tegn pr. scope og synlighed. Sprintline gemmer kun et lille objekt på hvert kort og et lille objekt på boardet. Estimathistorikken på hvert kort holdes ned til de seneste 60 ændringer.
+[MIT-licens](LICENSE)
